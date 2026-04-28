@@ -41,8 +41,8 @@
     "dev": "nodemon --watch server.ts --watch src --ext ts --exec tsx server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "drizzle-kit up:pg",
+    "db:push": "drizzle-kit push:pg"
   }
 }

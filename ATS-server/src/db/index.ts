@@ -5,7 +5,7 @@ import { config } from '../config'
 import * as schema from './schema'
 
 const client = postgres(config.supabase.dbUrl, {
-  ssl: config.isDev ? false : 'require',
+  ssl: config.isDev ? { rejectUnauthorized: false } : 'require',
   max: 10,
 })
 

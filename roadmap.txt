@@ -1,0 +1,344 @@
+﻿What This Product Is
+A B2B SaaS hiring platform for tech companies. HR teams use it to manage their entire interview pipeline — from importing resumes to selecting final candidates — without switching between Google Drive, Gmail, Slack, Google Calendar, and spreadsheets.
+________________
+
+
+The Core Problem It Solves
+Right now most HR teams at small-to-mid tech companies do this:
+Resumes come via email or Drive
+         ↓
+HR manually opens each PDF
+         ↓
+Copy-pastes data into a spreadsheet
+         ↓
+WhatsApp/emails interviewers manually
+         ↓
+Interviewer replies with availability on chat
+         ↓
+HR creates Google Meet manually
+         ↓
+Feedback comes on WhatsApp/email
+         ↓
+HR tracks everything in a messy spreadsheet
+Your platform replaces that entire mess with one dashboard.
+________________
+
+
+Who Uses It — 3 User Types
+┌─────────────────┬──────────────────┬─────────────────┐
+│   HR Admin      │   Interviewer    │   System (Auto) │
+├─────────────────┼──────────────────┼─────────────────┤
+│ Imports resumes │ Gets notified    │ Parses resumes  │
+│ Reviews CVs     │ Sees candidates  │ Sends Slack     │
+│ Approves people │ Books time slots │ Syncs Drive     │
+│ Configures      │ Writes feedback  │ Fetches         │
+│ rounds          │ Views transcript │ transcripts     │
+│ Invites         │                  │                 │
+│ interviewers    │                  │                 │
+└─────────────────┴──────────────────┴─────────────────┘
+________________
+
+
+Complete Flow — Start to End
+STEP 1 — HR SETUP
+HR signs up → logs in with Google OAuth
+Connects their Google Drive folder
+System scans folder structure:
+  drive/resume_ats/rules/backend/   ← resumes here
+  drive/resume_ats/rules/frontend/
+  drive/resume_ats/rules/devops/
+Each subfolder = one job role
+Each PDF inside = one candidate
+
+
+STEP 2 — RESUME PARSING
+System reads every PDF from Drive
+AI parses: name, email, phone,
+  education, experience, skills, projects
+Stores parsed data in DB
+Calculates ATS score (0-100) based on role match
+Candidate appears in HR dashboard
+
+
+STEP 3 — HR REVIEWS
+HR opens dashboard → sees all candidates
+Filters by role, status, ATS score
+Opens candidate → sees tabs:
+  Education | Experience | Skills | Projects
+HR clicks Approve or Reject
+
+
+STEP 4 — ROUND CONFIGURATION
+In Settings → Interview Rounds
+HR picks a role (e.g. Backend)
+Adds rounds:
+  Round 1 → Priya Mandal → priya@gmail.com
+  Round 2 → Rahul Sharma → rahul@gmail.com
+  Round 3 → CTO → cto@company.com
+Each round has exactly one interviewer
+
+
+STEP 5 — INTERVIEWER INVITE
+HR goes to Settings → Invite
+Selects role + round
+System generates invite link:
+  https://yourapp.com/invite/TOKEN
+HR copies and sends to interviewer
+Interviewer clicks → logs in with Google
+Their account is created as sub-user
+Their OAuth token saved for Calendar access
+
+
+STEP 6 — APPROVAL TRIGGERS ASSIGNMENT
+When HR approves a candidate:
+  candidate.status = hr_approved
+  candidate.current_round = 1
+  System finds Round 1 interviewer for that role
+  candidate.assigned_interviewer_email = that Gmail
+  Slack notification fires to that interviewer:
+    "New candidate assigned: Xitiz Vera — Backend Round 1"
+
+
+STEP 7 — INTERVIEWER BOOKS SLOT
+Interviewer logs in → sees only their candidates
+Opens candidate → Book Slot tab
+Clicks a date on calendar
+System auto-calls Google Calendar freebusy API
+Shows interviewer's free windows:
+  🔴 10:00 AM – 2:00 PM  Deep-work  BUSY
+  🟢 2:00 PM – 4:00 PM   Free       [2:00 PM–2:45 PM] [2:30 PM–3:15 PM]
+Interviewer picks a slot + duration
+Clicks Confirm Booking
+System creates Google Calendar event:
+  Title: Backend Interview — Round 1 — Xitiz Vera
+  Attendees: candidate email + interviewer email
+  Google Meet link auto-generated
+  Invite emails sent to both automatically
+
+
+STEP 8 — INTERVIEW HAPPENS
+Both join Google Meet
+Interview conducted
+Meet link + time visible in dashboard
+
+
+STEP 9 — FEEDBACK
+After interview, interviewer opens candidate tab
+Fills feedback form:
+  Technical rating (1-5)
+  Communication rating (1-5)
+  Overall rating (1-5)
+  Strengths, weaknesses, notes
+  Recommendation: Strong Yes / Yes / Maybe / No
+Saves feedback
+
+
+STEP 10 — NEXT ROUND OR SELECTION
+If interviewer marks Pass:
+  current_round increments (1 → 2)
+  System finds Round 2 interviewer
+  assigned_interviewer_email updated
+  Slack notification to Round 2 interviewer
+  Candidate disappears from Round 1 view
+  Appears in Round 2 interviewer's view
+
+
+If interviewer marks Fail:
+  candidate.status = rejected
+
+
+If candidate passes ALL rounds:
+  candidate.status = selected
+  Appears in HR's Selected Candidates tab
+________________
+
+
+Complete Tech Stack
+┌─────────────────────────────────────────────────────┐
+│                    FRONTEND                         │
+├─────────────────────────────────────────────────────┤
+│  React + TypeScript + Vite                          │
+│  shadcn/ui — component library                      │
+│  Tailwind CSS — styling                             │
+│  TanStack Query — data fetching + caching           │
+│  React Router v6 — routing                         │
+│  Axios — HTTP client                                │
+│  Lucide React — icons                               │
+│  date-fns — date formatting                         │
+│  Default theme: DARK                                │
+│  Primary color: Indigo #6366f1                      │
+└─────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────┐
+│                    BACKEND                          │
+├─────────────────────────────────────────────────────┤
+│  Node.js + Express                                  │
+│  TypeScript                                         │
+│  Drizzle ORM — type-safe database queries           │
+│  express-session — session management               │
+│  node-cron — background jobs                        │
+│  luxon — timezone handling                          │
+│  helmet — security headers                          │
+│  cors — cross-origin config                         │
+│  morgan — request logging                           │
+└─────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────┐
+│                   DATABASE                          │
+├─────────────────────────────────────────────────────┤
+│  PostgreSQL via Supabase                            │
+│  14 tables (schema defined in Drizzle)              │
+│  ORM handles migrations                             │
+└─────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────┐
+│               EXTERNAL SERVICES                     │
+├─────────────────────────────────────────────────────┤
+│  Google OAuth2 — authentication for all users       │
+│  Google Drive API — resume file import              │
+│  Google Calendar API — free/busy + event creation   │
+│  Google Meet — auto-generated meeting links         │
+│  Slack Webhooks — interviewer notifications         │
+└─────────────────────────────────────────────────────┘
+________________
+
+
+Backend Architecture — How It's Structured
+backend/
+├── src/
+│   ├── config/
+│   │   └── index.ts
+│   │       All env variables exported from one place.
+│   │       Nothing is hardcoded anywhere else.
+│   │
+│   ├── db/
+│   │   └── schema.ts
+│   │       Single file defining ALL 14 tables
+│   │       using Drizzle ORM. This IS the database.
+│   │
+│   ├── routes/
+│   │   One file per feature. Only defines URL paths
+│   │   and which controller handles them.
+│   │   auth.routes.ts
+│   │   candidates.routes.ts
+│   │   roles.routes.ts
+│   │   interviews.routes.ts
+│   │   calendar.routes.ts
+│   │   invite.routes.ts
+│   │   feedback.routes.ts
+│   │
+│   ├── controllers/
+│   │   Handles HTTP request and response only.
+│   │   Calls services. Never writes raw DB queries.
+│   │   auth.controller.ts
+│   │   candidates.controller.ts
+│   │   roles.controller.ts
+│   │   interviews.controller.ts
+│   │   calendar.controller.ts
+│   │   invite.controller.ts
+│   │   feedback.controller.ts
+│   │
+│   ├── services/
+│   │   Pure business logic. No HTTP here.
+│   │   Can be reused across controllers.
+│   │   google.service.ts  ← Calendar + Drive API calls
+│   │   slack.service.ts   ← Slack notification logic
+│   │   parser.service.ts  ← Resume PDF parsing + AI
+│   │   transcript.service.ts ← Transcript fetching
+│   │   approval.service.ts   ← Approval + round logic
+│   │
+│   ├── middleware/
+│   │   auth.middleware.ts  ← verify session, attach user
+│   │   error.middleware.ts ← global error handler
+│   │   role.middleware.ts  ← check hr vs interviewer
+│   │
+│   └── app.ts
+│       Express app setup. Registers all routes.
+│       Applies all middleware.
+│
+└── server.ts
+    Just starts the server. Calls app.listen.
+    Starts cron jobs.
+________________
+
+
+Database — All 14 Tables Explained
+companies          Who owns the platform account.
+                   Stores Drive folder link, Slack config.
+
+
+users              HR admins + interviewers.
+                   Stores Google OAuth tokens for API calls.
+                   role field = 'admin' or 'interviewer'
+
+
+sessions           Login session tokens with expiry.
+
+
+integrations       Third-party OAuth tokens per user.
+
+
+slack_integrations Slack webhook URL + which events to notify.
+
+
+roles              Job role names tied to a company.
+                   e.g. Backend, Frontend, DevOps
+
+
+candidates         CORE TABLE. Everything about a candidate.
+                   Parsed CV data, ATS score, status,
+                   current round, assigned interviewer.
+
+
+interview_configs  Round configuration per role.
+                   Stores rounds as JSON array:
+                   [{round:1, name:"Priya", gmail:"..."},
+                    {round:2, name:"Rahul", gmail:"..."}]
+
+
+interviews         Legacy table. Basic interview records.
+                   (to be merged with scheduled_interviews)
+
+
+scheduled_interviews Detailed booking records.
+                   Google Event ID, Meet link,
+                   start/end with timezone, status.
+
+
+interview_transcripts Transcript text + summary per round.
+
+
+invites            Invite tokens for interviewers.
+                   Token, email, role, expiry, used flag.
+
+
+sync_states        Tracks Drive/Gmail sync status per user.
+                   Prevents duplicate syncs running.
+
+
+notifications      In-app notification log per user.
+________________
+
+
+Frontend — All Pages
+PUBLIC (no login needed)
+  /login              Google OAuth button only
+  /invite/:token      Interviewer accepts invite here
+
+
+HR PAGES (role = admin)
+  /dashboard          Stats + recent activity
+  /candidates         Full candidate list with filters
+  /candidates/:id     Detail — tabs for CV data + approve
+  /settings           Two tabs only:
+                        Interview Rounds configuration
+                        Invite link generation
+
+
+INTERVIEWER PAGES (role = interviewer)
+  /interviewer              My assigned candidates
+  /interviewer/:id          Detail — Book Slot + Feedback
+                            + Transcript tabs
