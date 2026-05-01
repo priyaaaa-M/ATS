@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.inviteRoutes = void 0;
+const express_1 = require("express");
+const invite_controller_1 = require("../controllers/invite.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const company_middleware_1 = require("../middleware/company.middleware");
+const role_middleware_1 = require("../middleware/role.middleware");
+const router = (0, express_1.Router)();
+exports.inviteRoutes = router;
+router.get('/:token', invite_controller_1.inviteController.validateToken);
+router.use(auth_middleware_1.authMiddleware);
+router.post('/generate', company_middleware_1.requireCompanyContext, (0, role_middleware_1.requireRole)('hr'), invite_controller_1.inviteController.generate);
+router.get('/', company_middleware_1.requireCompanyContext, (0, role_middleware_1.requireRole)('hr'), invite_controller_1.inviteController.list);
+router.post('/:token/accept', invite_controller_1.inviteController.accept);

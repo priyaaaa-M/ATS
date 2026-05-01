@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.syncRoutes = void 0;
+const express_1 = require("express");
+const sync_controller_1 = require("../controllers/sync.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const role_middleware_1 = require("../middleware/role.middleware");
+const router = (0, express_1.Router)();
+exports.syncRoutes = router;
+router.use(auth_middleware_1.authMiddleware);
+router.use((0, role_middleware_1.requireRole)('hr'));
+router.post('/drive', sync_controller_1.syncController.syncDrive);
+router.get('/status', sync_controller_1.syncController.getStatus);

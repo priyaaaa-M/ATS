@@ -1,3 +1,5 @@
+console.log("ACTUAL DB URL 👉", process.env.DATABASE_URL);
+
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { createClient } from '@supabase/supabase-js'

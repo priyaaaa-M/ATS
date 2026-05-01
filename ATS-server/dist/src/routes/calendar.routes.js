@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.calendarRoutes = void 0;
+const express_1 = require("express");
+const calendar_controller_1 = require("../controllers/calendar.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+exports.calendarRoutes = router;
+router.use(auth_middleware_1.authMiddleware);
+router.post('/free-slots', calendar_controller_1.calendarController.getFreeSlots);

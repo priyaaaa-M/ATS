@@ -56,19 +56,8 @@ export const driveService = {
       where: eq(users.id, userId),
     })
 
-    const rulesFolder = await drive.files.list({
-      q: `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name = 'rules' and trashed = false`,
-      fields: 'files(id,name)',
-      pageSize: 1,
-    })
-
-    const rules = rulesFolder.data.files?.[0]
-    if (!rules?.id) {
-      throw new AppError("Drive root folder must contain a 'rules' subfolder", 400)
-    }
-
     const folders = await drive.files.list({
-      q: `'${rules.id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      q: `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
       fields: 'files(id,name)',
       pageSize: 500,
     })

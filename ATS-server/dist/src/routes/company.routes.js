@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.companyRoutes = void 0;
+const express_1 = require("express");
+const company_controller_1 = require("../controllers/company.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const company_middleware_1 = require("../middleware/company.middleware");
+const role_middleware_1 = require("../middleware/role.middleware");
+const router = (0, express_1.Router)();
+exports.companyRoutes = router;
+router.use(auth_middleware_1.authMiddleware);
+router.use(company_middleware_1.requireCompanyContext);
+router.get('/profile', company_controller_1.companyController.getProfile);
+router.put('/profile', (0, role_middleware_1.requireRole)('hr'), company_controller_1.companyController.updateProfile);
+router.get('/drive-config', company_controller_1.companyController.getDriveConfig);
+router.post('/drive-config', (0, role_middleware_1.requireRole)('hr'), company_controller_1.companyController.saveDriveConfig);

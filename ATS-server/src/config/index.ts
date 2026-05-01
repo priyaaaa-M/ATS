@@ -1,4 +1,7 @@
 import 'dotenv/config'
+import { setDefaultResultOrder } from 'node:dns'
+
+setDefaultResultOrder('ipv4first')
 
 const required = (key: string): string => {
   const value = process.env[key]
@@ -24,6 +27,10 @@ const optionalNumber = (key: string, fallback: number): number => {
 }
 
 const nodeEnv = optional('NODE_ENV', 'development')
+const databaseUrl =
+  optional('DATABASE_URL') ||
+  optional('SUPABASE_POOLER_URL') ||
+  optional('SUPABASE_DB_URL')
 
 export const config = {
   port: optionalNumber('PORT', 3000),
@@ -42,7 +49,7 @@ export const config = {
   supabase: {
     url: required('SUPABASE_URL'),
     serviceKey: required('SUPABASE_SERVICE_KEY'),
-    dbUrl: required('DATABASE_URL'),
+    dbUrl: databaseUrl || required('DATABASE_URL'),
   },
   google: {
     clientId: required('GOOGLE_CLIENT_ID'),

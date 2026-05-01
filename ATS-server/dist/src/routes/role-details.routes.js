@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.roleDetailsRoutes = void 0;
+const express_1 = require("express");
+const role_details_controller_1 = require("../controllers/role-details.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const role_middleware_1 = require("../middleware/role.middleware");
+const router = (0, express_1.Router)();
+exports.roleDetailsRoutes = router;
+router.use(auth_middleware_1.authMiddleware);
+router.get('/', (0, role_middleware_1.requireRole)('hr', 'executive', 'hiring_manager', 'recruiter', 'team_member'), role_details_controller_1.roleDetailsController.list);
+router.get('/:id', (0, role_middleware_1.requireRole)('hr', 'executive', 'hiring_manager', 'recruiter', 'team_member'), role_details_controller_1.roleDetailsController.getById);
+router.post('/', (0, role_middleware_1.requireRole)('hr', 'executive', 'hiring_manager', 'recruiter'), role_details_controller_1.roleDetailsController.create);
+router.put('/:id', (0, role_middleware_1.requireRole)('hr', 'executive', 'hiring_manager', 'recruiter'), role_details_controller_1.roleDetailsController.update);
+router.delete('/:id', (0, role_middleware_1.requireRole)('hr', 'executive', 'hiring_manager', 'recruiter'), role_details_controller_1.roleDetailsController.remove);

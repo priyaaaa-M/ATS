@@ -1,8 +1,22 @@
 import { and, eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '../db'
 import { companies, invites, users } from '../db/schema'
 import { AppError } from '../types'
 import { googleService } from './google.service'
+
+const userRoleSchema = z.enum([
+  'executive',
+  'hiring_manager',
+  'recruiter',
+  'interviewer',
+  'team_member',
+  'hr',
+])
+
+function normalizeUserRole(role: string) {
+  return userRoleSchema.parse(role)
+}
 
 function deriveCompanyName(email: string) {
   const domain = email.split('@')[1] || 'company'
@@ -18,11 +32,14 @@ export const authService = {
       throw new AppError('Google account email not available', 400)
     }
 
+    console.log('[AUTH][DB] Checking for existing user...')
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, googleUser.email.toLowerCase()),
     })
+    console.log('[AUTH][DB] Existing user lookup done:', Boolean(existingUser))
 
     if (existingUser) {
+      console.log('[AUTH][DB] Updating existing user...')
       const [updatedUser] = await db
         .update(users)
         .set({
@@ -35,21 +52,30 @@ export const authService = {
         })
         .where(eq(users.id, existingUser.id))
         .returning()
+      console.log('[AUTH][DB] Existing user updated')
 
-      return { user: updatedUser }
+      return {
+        user: {
+          ...updatedUser,
+          role: normalizeUserRole(updatedUser.role),
+        },
+      }
     }
 
     const invite =
+      (console.log('[AUTH][DB] Checking invite token...'),
       inviteToken &&
       (await db.query.invites.findFirst({
         where: and(eq(invites.token, inviteToken), eq(invites.used, false)),
-      }))
+      })))
+    console.log('[AUTH][DB] Invite lookup done:', Boolean(invite))
 
     if (
       invite &&
       invite.email.toLowerCase() === googleUser.email.toLowerCase() &&
       invite.expiresAt > new Date()
     ) {
+      console.log('[AUTH][DB] Creating invited interviewer...')
       const [newInterviewer] = await db
         .insert(users)
         .values({
@@ -68,17 +94,26 @@ export const authService = {
         .update(invites)
         .set({ used: true })
         .where(eq(invites.id, invite.id))
+      console.log('[AUTH][DB] Invite marked used')
 
-      return { user: newInterviewer }
+      return {
+        user: {
+          ...newInterviewer,
+          role: normalizeUserRole(newInterviewer.role),
+        },
+      }
     }
 
+    console.log('[AUTH][DB] Creating company...')
     const [company] = await db
       .insert(companies)
       .values({
         name: deriveCompanyName(googleUser.email),
       })
       .returning()
+    console.log('[AUTH][DB] Company created:', company.id)
 
+    console.log('[AUTH][DB] Creating HR user...')
     const [newHr] = await db
       .insert(users)
       .values({
@@ -91,8 +126,14 @@ export const authService = {
         googleEmail: googleUser.email,
       })
       .returning()
+    console.log('[AUTH][DB] HR user created:', newHr.id)
 
-    return { user: newHr }
+    return {
+      user: {
+        ...newHr,
+        role: normalizeUserRole(newHr.role),
+      },
+    }
   },
 
   getUserById: async (userId: string) => {

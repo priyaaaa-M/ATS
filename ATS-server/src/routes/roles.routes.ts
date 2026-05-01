@@ -6,7 +6,7 @@ import { requireRole } from '../middleware/role.middleware'
 const router = Router()
 
 router.use(authMiddleware)
-router.use(requireRole('hr'))
+router.use(requireRole('hr', 'executive', 'hiring_manager', 'recruiter'))
 router.get('/', rolesController.list)
 router.post('/sync-from-drive', rolesController.syncFromDrive)
 

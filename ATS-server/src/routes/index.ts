@@ -6,6 +6,7 @@ import { companyRoutes } from './company.routes'
 import { feedbackRoutes } from './feedback.routes'
 import { interviewsRoutes } from './interviews.routes'
 import { inviteRoutes } from './invite.routes'
+import { roleDetailsRoutes } from './role-details.routes'
 import { rolesRoutes } from './roles.routes'
 import { roundsRoutes } from './rounds.routes'
 import { syncRoutes } from './sync.routes'
@@ -16,6 +17,7 @@ export function registerRoutes(app: Express) {
   app.use('/auth', authRoutes)
   app.use('/api/candidates', candidatesRoutes)
   app.use('/api/roles', rolesRoutes)
+  app.use('/api/role-details', roleDetailsRoutes)
   app.use('/api/rounds', roundsRoutes)
   app.use('/api/interviews', interviewsRoutes)
   app.use('/api/calendar', calendarRoutes)

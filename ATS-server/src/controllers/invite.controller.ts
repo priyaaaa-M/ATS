@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express'
 import { inviteService } from '../services/invite.service'
+import { requireCompanyId } from '../utils/session'
 
 export const inviteController = {
   validateToken: async (req: Request, res: Response, next: NextFunction) => {
@@ -13,9 +14,10 @@ export const inviteController = {
 
   generate: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const companyId = requireCompanyId(req)
       const invite = await inviteService.generate({
         ...req.body,
-        companyId: req.session.companyId,
+        companyId,
         createdByUserId: req.session.userId!,
       })
       return res.status(201).json(invite)
@@ -26,7 +28,8 @@ export const inviteController = {
 
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const invites = await inviteService.listByCompany(req.session.companyId)
+      const companyId = requireCompanyId(req)
+      const invites = await inviteService.listByCompany(companyId)
       return res.json(invites)
     } catch (err) {
       return next(err)

@@ -14,12 +14,3 @@ export async function authMiddleware(
 
   next()
 }
-
-declare module 'express-session' {
-  interface SessionData {
-    userId: string
-    userEmail: string
-    userRole: string
-    companyId: string
-  }
-}

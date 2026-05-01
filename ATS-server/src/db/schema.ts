@@ -13,8 +13,7 @@ export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   logoUrl: text('logo_url'),
-  brandColor: text('brand_color').default('#6366F1'),
-  slackWebhookUrl: text('slack_webhook_url'),
+  brandColor: text('brand_color').default('#0D7377'),
   industry: text('industry'),
   size: text('size'),
   description: text('description'),
@@ -91,6 +90,32 @@ export const roles = pgTable(
   })
 )
 
+export const roleDetails = pgTable('role_details', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id').references(() => companies.id),
+  userId: uuid('user_id').references(() => users.id),
+  name: text('name').notNull(),
+  title: text('title'),
+  description: text('description'),
+  hiringGoals: text('hiring_goals'),
+  salaryMin: integer('salary_min'),
+  salaryMax: integer('salary_max'),
+  salaryCurrency: text('salary_currency').default('INR'),
+  expectations: text('expectations'),
+  activities: text('activities'),
+  workTags: jsonb('work_tags').$type<string[]>(),
+  sellingPoints: text('selling_points'),
+  screeningGuide: text('screening_guide'),
+  outreachTemplate: text('outreach_template'),
+  screeningQuestions: jsonb('screening_questions'),
+  interviewStages: jsonb('interview_stages'),
+  status: text('status').default('open'),
+  hiringManagerId: uuid('hiring_manager_id').references(() => users.id),
+  assignedRecruiterIds: jsonb('assigned_recruiter_ids').$type<string[]>(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+})
+
 export const interviewRounds = pgTable(
   'interview_rounds',
   {
@@ -126,6 +151,13 @@ export const candidates = pgTable(
     resumeUrl: text('resume_url'),
     driveFileId: text('drive_file_id'),
     status: text('status').default('pending'),
+    inboxStatus: text('inbox_status').default('inbox'),
+    currentStage: text('current_stage'),
+    stageHistory: jsonb('stage_history'),
+    notes: jsonb('notes'),
+    screeningAnswers: jsonb('screening_answers'),
+    matchScore: integer('match_score').default(0),
+    matchBreakdown: jsonb('match_breakdown'),
     currentRound: integer('current_round').default(1),
     totalRounds: integer('total_rounds').default(1),
     assignedInterviewerEmail: text('assigned_interviewer_email'),

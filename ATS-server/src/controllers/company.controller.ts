@@ -1,10 +1,12 @@
 import type { NextFunction, Request, Response } from 'express'
 import { companyService } from '../services/company.service'
+import { requireCompanyId } from '../utils/session'
 
 export const companyController = {
   getProfile: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const profile = await companyService.getProfile(req.session.companyId)
+      const companyId = requireCompanyId(req)
+      const profile = await companyService.getProfile(companyId)
       return res.json(profile)
     } catch (err) {
       return next(err)
@@ -13,8 +15,9 @@ export const companyController = {
 
   updateProfile: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const companyId = requireCompanyId(req)
       const profile = await companyService.updateProfile(
-        req.session.companyId,
+        companyId,
         req.body
       )
       return res.json(profile)
@@ -34,9 +37,10 @@ export const companyController = {
 
   saveDriveConfig: async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const companyId = requireCompanyId(req)
       const driveConfig = await companyService.saveDriveConfig(
         req.session.userId!,
-        req.session.companyId,
+        companyId,
         req.body
       )
       return res.status(201).json(driveConfig)

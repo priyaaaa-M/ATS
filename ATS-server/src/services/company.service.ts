@@ -8,7 +8,6 @@ const updateCompanySchema = z.object({
   name: z.string().min(1).optional(),
   logoUrl: z.string().url().optional().or(z.literal('')),
   brandColor: z.string().min(4).optional(),
-  slackWebhookUrl: z.string().url().optional().or(z.literal('')),
   industry: z.string().optional(),
   size: z.string().optional(),
   description: z.string().optional(),
@@ -46,7 +45,6 @@ export const companyService = {
       .set({
         ...payload,
         logoUrl: payload.logoUrl || null,
-        slackWebhookUrl: payload.slackWebhookUrl || null,
         website: payload.website || null,
         updatedAt: new Date(),
       })
