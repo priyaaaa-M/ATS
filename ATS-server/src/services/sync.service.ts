@@ -4,6 +4,7 @@ import { db } from '../db'
 import { driveConfigs, syncStates, users } from '../db/schema'
 import { AppError } from '../types'
 import { candidateService } from './candidate.service'
+import { companyService } from './company.service'
 import { driveService } from './drive.service'
 import { parserService } from './parser.service'
 import { slackService } from './slack.service'
@@ -89,6 +90,52 @@ export const syncService = {
       totalFailed: 0,
     },
 
+  ensureDriveSetup: async (userId: string) => {
+    console.log(`[SYNC] Ensuring drive setup for user ${userId}`)
+    const driveConfig = await driveService.getDriveConfig(userId)
+    let targetFolderId = driveConfig?.driveFolderId
+
+    if (targetFolderId) {
+      console.log(`[SYNC] Found existing drive config: ${targetFolderId}. Verifying existence...`)
+      try {
+        const folder = await driveService.getFolderMetadata(userId, targetFolderId)
+        if (folder) {
+          console.log(`[SYNC] Verified: Folder still exists in Drive.`)
+          return targetFolderId
+        }
+      } catch (err) {
+        console.warn(`[SYNC] Stored folder ID ${targetFolderId} is invalid or inaccessible. Re-initializing...`)
+        targetFolderId = undefined
+      }
+    }
+
+    console.log(`[SYNC] No valid drive config found, searching for Resume-ATS folder...`)
+    let autoFolder = await driveService.findFolderByName(userId, 'Resume-ATS')
+    if (!autoFolder) {
+      autoFolder = await driveService.findFolderByName(userId, 'Resume ats')
+    }
+
+    if (!autoFolder?.id) {
+      console.log(`[SYNC] Folder not found, creating new Resume-ATS folder...`)
+      autoFolder = await driveService.createFolder(userId, 'Resume-ATS')
+      console.log(`[SYNC] Created folder Resume-ATS with ID ${autoFolder.id}, creating rules subfolder...`)
+      await driveService.createFolder(userId, 'rules', autoFolder.id!)
+    } else {
+      console.log(`[SYNC] Found existing folder in Drive: ${autoFolder.id}`)
+    }
+    targetFolderId = autoFolder.id!
+
+    // Persist
+    const owner = await db.query.users.findFirst({ where: eq(users.id, userId) })
+    await companyService.saveDriveConfig(
+      userId,
+      owner?.companyId || null,
+      { driveFolderLink: `https://drive.google.com/drive/folders/${targetFolderId}` }
+    )
+
+    return targetFolderId
+  },
+
   runDriveSync: async (userId: string) => {
     await updateSyncState(userId, {
       isSyncRunning: true,
@@ -99,14 +146,11 @@ export const syncService = {
     })
 
     try {
-      const driveConfig = await driveService.getDriveConfig(userId)
-      if (!driveConfig?.driveFolderId) {
-        throw new AppError('Drive not configured', 400)
-      }
+      const targetFolderId = await syncService.ensureDriveSetup(userId)
 
       const roleFolders = await driveService.scanRoleFolders(
         userId,
-        driveConfig.driveFolderId
+        targetFolderId
       )
 
       let totalProcessed = 0

@@ -27,7 +27,7 @@ export const googleService = {
     return client.generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
-      scope: config.google.scopes,
+      scope: [...config.google.scopes],
       state,
     })
   },

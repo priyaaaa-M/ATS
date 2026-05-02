@@ -1,316 +1,333 @@
-'use client'
+"use client";
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
-import { Users, Clock, Calendar, CheckCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { AppShell } from '@/components/layout/app-shell'
-import { candidatesApi } from '@/lib/api/candidates'
-import { interviewsApi } from '@/lib/api/interviews'
-import { useAuthStore } from '@/lib/store/auth-store'
-import { formatDate } from '@/lib/utils'
-import type { Candidate, Interview } from '@/lib/types'
-import Link from 'next/link'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts'
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { candidatesApi } from "@/lib/api/candidates";
+import { useAuthStore } from "@/lib/store/auth-store";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { AppShell } from "@/components/layout/app-shell";
+import { Filter, Plus } from "lucide-react";
+import { NewCandidateDialog } from "@/components/candidates/new-candidate-dialog";
 
-const statCards = [
-  { label: 'Total Candidates', icon: Users, key: 'total' },
-  { label: 'Pending Review', icon: Clock, key: 'pending' },
-  { label: 'Scheduled', icon: Calendar, key: 'scheduled' },
-  { label: 'Selected', icon: CheckCircle, key: 'selected' },
-]
+const STAGES = [
+  { id: "parsing", label: "AI Parsing", color: "#8B5CF6", pct: "100%" },
+  { id: "hr", label: "HR Review", color: "#F59E0B", pct: "67%" },
+  { id: "r1", label: "Round 1", color: "#3B82F6", pct: "50%" },
+  { id: "r2", label: "Round 2", color: "#3B82F6", pct: "36%" },
+  { id: "selected", label: "Selected", color: "#10B981", pct: "17%" },
+];
+
+const ROLE_FILTERS = ["All Roles", "Backend", "Frontend", "DevOps"];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+
+
+const statsContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.03,
+    },
+  },
+};
+
+
+const columnContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04,
+    },
+  },
+};
+
+
+
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+const columnVariants = {
+  hidden: { opacity: 0, x: 15 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 10 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+const cardContainerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+
 
 export default function DashboardPage() {
-  const { user, company } = useAuthStore()
-  const { data: candidates = [], isLoading: candidatesLoading } = useQuery({
-    queryKey: ['dashboard-candidates'],
+  const { user } = useAuthStore();
+  const [activeRole, setActiveRole] = useState("All Roles");
+  const [isNewCandidateOpen, setIsNewCandidateOpen] = useState(false);
+
+  const { data: candidates = [], isLoading } = useQuery({
+    queryKey: ["dashboard-candidates"],
     queryFn: () => candidatesApi.list(),
-  })
-  const { data: interviews = [], isLoading: interviewsLoading } = useQuery({
-    queryKey: ['dashboard-interviews'],
-    queryFn: interviewsApi.list,
-  })
-  const isLoading = candidatesLoading || interviewsLoading
+  });
 
-  const stats = {
-    total: candidates.length,
-    pending: candidates.filter(c => c.status === 'pending').length,
-    scheduled: candidates.filter(c => c.status === 'scheduled').length,
-    selected: candidates.filter(c => c.status === 'selected').length,
-  }
+  const stagedCandidates = useMemo(() => {
+    const filtered =
+      activeRole === "All Roles"
+        ? candidates
+        : candidates.filter((c) =>
+            c.role.toLowerCase().includes(activeRole.toLowerCase()),
+          );
 
-  const roleData = useMemo(() => {
-    const data = [
-      { name: 'Backend', pending: 0, approved: 0, scheduled: 0, selected: 0 },
-      { name: 'Frontend', pending: 0, approved: 0, scheduled: 0, selected: 0 },
-      { name: 'DevOps', pending: 0, approved: 0, scheduled: 0, selected: 0 },
-      { name: 'Full Stack', pending: 0, approved: 0, scheduled: 0, selected: 0 },
-    ]
+    return {
+      parsing: filtered.filter((c) => c.status === "pending").slice(0, 5),
+      hr: filtered.filter((c) => c.status === "hr_approved").slice(0, 5),
+      r1: filtered.filter((c) => c.status === "scheduled").slice(0, 5),
+      r2: filtered.filter((c) => c.status === "scheduled" && false).slice(0, 5),
+      selected: filtered.filter((c) => c.status === "selected").slice(0, 5),
+    };
+  }, [candidates, activeRole]);
 
-    candidates.forEach((candidate) => {
-      const roleIndex = data.findIndex((role) => candidate.role.includes(role.name))
-      if (roleIndex !== -1) {
-        if (candidate.status === 'pending') data[roleIndex].pending += 1
-        else if (candidate.status === 'hr_approved') data[roleIndex].approved += 1
-        else if (candidate.status === 'scheduled') data[roleIndex].scheduled += 1
-        else if (candidate.status === 'selected') data[roleIndex].selected += 1
-      }
-    })
-
-    return data
-  }, [candidates])
-
-  const greeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
-  }
+  const stats = [
+    {
+      label: "Total Applicants",
+      value: candidates.length,
+    },
+    {
+      label: "Awaiting Review",
+      value: candidates.filter((c) => c.status === "pending").length,
+    },
+    {
+      label: "Interviews Today",
+      value: 7,
+    },
+    {
+      label: "Selected",
+      value: candidates.filter((c) => c.status === "selected").length,
+    },
+  ];
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="font-[Syne] text-2xl md:text-3xl font-bold text-foreground">
-            {greeting()}, {user?.name?.split(' ')[0] || 'there'}
-          </h1>
-          <p className="text-muted-foreground">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            {' • '}
-            {company?.name}
-          </p>
-        </div>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="space-y-8 pb-10"
+      >
+        {/* Header Section */}
+        <motion.div
+          variants={itemVariants}
+          className="px-6 md:px-8 flex items-center justify-between"
+        >
+          <div className="flex flex-col gap-1">
+            <h1 className="text-5xl font-black tracking-tight text-foreground">
+              Managing{" "}
+              <span className="text-muted-foreground/40 font-medium">
+                Pipeline
+              </span>
+            </h1>
+            <p className="text-muted-foreground font-medium text-lg">
+              Welcome back, {user?.name || "Priya"}. Here's your workflow today.
+            </p>
+          </div>
+          <Button 
+            onClick={() => setIsNewCandidateOpen(true)}
+            className="rounded-full !px-6 h-14 bg-[#09090B] dark:bg-white hover:bg-[#09090B]/90 dark:hover:bg-white/90 text-white dark:text-black font-bold shadow-xl hover:scale-105 transition-transform"
+          >
+            <Plus className="mr-2 h-5 w-5" /> Add new candidate
+          </Button>
+        </motion.div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {statCards.map((stat, index) => (
+        {/* Stats Grid */}
+        <motion.div
+          variants={statsContainerVariants}
+          className="px-6 md:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+        >
+          {stats.map((stat, i) => (
             <motion.div
-              key={stat.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              key={i}
+              variants={itemVariants}
+              className={cn(
+                "group bg-card rounded-[2rem] p-8 shadow-premium transition-all cursor-pointer hover:translate-y-[-4px]",
+                i === 0 && "bg-lime dark:bg-lime/10",
+                i === 2 && "bg-blue-soft dark:bg-blue-soft/10",
+              )}
             >
-              <Card className="bg-surface border-border relative overflow-hidden">
-                <CardContent className="p-4 md:p-6">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-[Syne] text-3xl md:text-4xl font-bold text-primary">
-                        {isLoading ? '-' : stats[stat.key as keyof typeof stats]}
-                      </p>
-                      <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                        {stat.label}
-                      </p>
-                    </div>
-                  </div>
-                  <stat.icon className="absolute right-4 top-4 h-12 w-12 md:h-16 md:w-16 text-primary/10" />
-                </CardContent>
-              </Card>
+              <div className="space-y-1">
+                <div className="text-5xl font-black tracking-tighter">
+                  {isLoading ? "..." : stat.value}
+                </div>
+                <div className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-[0.2em]">
+                  {stat.label}
+                </div>
+              </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Pipeline Chart */}
-          <Card className="lg:col-span-3 bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="font-[Syne] text-foreground">Pipeline Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={roleData} barCategoryGap="20%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--surface))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Bar dataKey="pending" stackId="a" fill="hsl(var(--warning))" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="approved" stackId="a" fill="hsl(var(--info))" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="scheduled" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="selected" stackId="a" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex flex-wrap gap-4 mt-4 justify-center">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-sm bg-warning" />
-                  <span className="text-xs text-muted-foreground">Pending</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-sm bg-info" />
-                  <span className="text-xs text-muted-foreground">Approved</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-sm bg-primary" />
-                  <span className="text-xs text-muted-foreground">Scheduled</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-sm bg-success" />
-                  <span className="text-xs text-muted-foreground">Selected</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Funnel Section */}
+        <div className="space-y-4">
+          <div className="px-6 md:px-8 flex items-center justify-between mb-8">
+            <motion.div variants={itemVariants} className="flex items-center gap-3">
+              <h2 className="text-2xl font-black text-foreground">
+                Hiring Funnel
+              </h2>
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            </motion.div>
+            <motion.div variants={itemVariants} className="flex items-center gap-1 p-1.5 bg-card rounded-full shadow-premium">
+              {ROLE_FILTERS.map((role) => (
+                <button
+                  key={role}
+                  onClick={() => setActiveRole(role)}
+                  className={cn(
+                    "px-6 py-2.5 text-[13px] font-black rounded-full transition-all",
+                    activeRole === role
+                      ? "bg-foreground text-background shadow-lg"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {role}
+                </button>
+              ))}
+            </motion.div>
+          </div>
 
-          {/* Recent Activity */}
-          <Card className="lg:col-span-2 bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="font-[Syne] text-foreground">Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {candidates.slice(0, 5).map((candidate, idx) => (
-                  <div key={candidate.id} className="flex items-start gap-3">
-                    <div className={`mt-1 h-2 w-2 rounded-full ${
-                      candidate.status === 'selected' ? 'bg-success' :
-                      candidate.status === 'rejected' ? 'bg-destructive' :
-                      candidate.status === 'hr_approved' ? 'bg-info' :
-                      'bg-warning'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">
-                        <span className="font-medium">{candidate.name}</span>
-                        {' '}
-                        {candidate.status === 'selected' ? 'was selected' :
-                         candidate.status === 'rejected' ? 'was rejected' :
-                         candidate.status === 'hr_approved' ? 'was approved' :
-                         'is pending review'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{candidate.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Upcoming Interviews */}
-          <Card className="bg-surface border-border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="font-[Syne] text-foreground">Upcoming Interviews</CardTitle>
-              <Link href="/interviews">
-                <Button variant="ghost" size="sm" className="text-primary">View All</Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {interviews.slice(0, 4).map((interview) => (
-                  <div 
-                    key={interview.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-surface-2"
+          <motion.div 
+            variants={columnContainerVariants}
+            className="w-full overflow-x-auto pb-8 min-h-[450px] snap-x scrollbar-thin"
+          >
+            <div className="flex items-start gap-3 px-6 md:px-8 min-w-max">
+              {STAGES.map((stage, idx) => {
+                const cands =
+                  stagedCandidates[stage.id as keyof typeof stagedCandidates] ||
+                  [];
+                return (
+                  <motion.div
+                    key={stage.id}
+                    variants={columnVariants}
+                    className="flex flex-col min-h-[450px] rounded-[2.5rem] bg-card shadow-premium overflow-hidden min-w-[320px] max-w-[320px] shrink-0 snap-center"
                   >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {interview.candidate_name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {interview.candidate_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Round {interview.round} • {interview.interviewer_name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(interview.scheduled_at)}
-                      </p>
-                      <a 
-                        href={interview.meet_link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline"
+                    <div className="px-5 pt-6 pb-4 flex items-center justify-between bg-secondary/10">
+                      <div className="flex flex-col gap-0.5">
+                        <h3 className="text-[15px] font-bold text-foreground tracking-tight">
+                          {stage.label}
+                        </h3>
+                        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                          {stage.pct} conv.
+                        </span>
+                      </div>
+                      <div
+                        className="text-4xl font-black tracking-tighter leading-none"
+                        style={{ color: stage.color }}
                       >
-                        Join Meet
-                      </a>
+                        {cands.length}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {interviews.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No upcoming interviews
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Role Pipeline */}
-          <Card className="bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="font-[Syne] text-foreground">Roles Pipeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {roleData.map((role) => {
-                  const total = role.pending + role.approved + role.scheduled + role.selected
-                  const selectedPercent = total > 0 ? (role.selected / total) * 100 : 0
-                  return (
-                    <div key={role.name} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-foreground font-medium">{role.name}</span>
-                        <span className="text-muted-foreground">{total} candidates</span>
-                      </div>
-                      <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
-                        <div className="h-full flex">
-                          <div 
-                            className="bg-warning transition-all" 
-                            style={{ width: `${total > 0 ? (role.pending / total) * 100 : 0}%` }} 
-                          />
-                          <div 
-                            className="bg-info transition-all" 
-                            style={{ width: `${total > 0 ? (role.approved / total) * 100 : 0}%` }} 
-                          />
-                          <div 
-                            className="bg-primary transition-all" 
-                            style={{ width: `${total > 0 ? (role.scheduled / total) * 100 : 0}%` }} 
-                          />
-                          <div 
-                            className="bg-success transition-all" 
-                            style={{ width: `${selectedPercent}%` }} 
-                          />
+                    <motion.div 
+                      variants={cardContainerVariants}
+                      className="flex-1 p-3 flex flex-col gap-1.5 overflow-y-auto max-h-[450px] scrollbar-none"
+                    >
+                      <AnimatePresence mode="popLayout">
+                        {cands.map((candidate) => (
+                          <motion.div
+                            key={candidate.id}
+                            layout
+                            variants={cardVariants}
+                            className="group bg-background rounded-[2rem] p-6 min-h-[100px] flex flex-col justify-between shadow-sm hover:shadow-md transition-all border border-transparent hover:border-primary/10"
+                          >
+                            <div className="text-[13px] font-black text-foreground truncate mb-1">
+                              {candidate.name}
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] text-muted-foreground font-bold truncate pr-2 uppercase tracking-tight">
+                                {candidate.role}
+                              </span>
+                              <div
+                                className={cn(
+                                  "text-[10px] font-black px-2 py-0.5 rounded-full",
+                                  candidate.ats_score &&
+                                    candidate.ats_score >= 85
+                                    ? "bg-emerald-500/10 text-emerald-600"
+                                    : candidate.ats_score &&
+                                        candidate.ats_score >= 70
+                                      ? "bg-amber-500/10 text-amber-600"
+                                      : "bg-rose-500/10 text-rose-600",
+                                )}
+                              >
+                                {candidate.ats_score || "70"}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+
+                      {cands.length === 0 && !isLoading && (
+                        <div className="h-24 flex flex-col items-center justify-center">
+                          <span className="text-[11px] text-muted-foreground/40 font-bold uppercase tracking-widest">
+                            No Cards
+                          </span>
                         </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                      )}
+                      </motion.div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
+      <NewCandidateDialog 
+        open={isNewCandidateOpen} 
+        onOpenChange={setIsNewCandidateOpen} 
+      />
     </AppShell>
-  )
+  );
 }

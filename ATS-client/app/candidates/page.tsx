@@ -1,65 +1,34 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Filter, Grid, List, X } from 'lucide-react'
-import { toast } from 'sonner'
-import { AppShell } from '@/components/layout/app-shell'
-import { CandidateCard } from '@/components/candidates/candidate-card'
+import { useQuery } from '@tanstack/react-query'
+import { Search, Filter, MoreHorizontal, Mail, Briefcase, Star, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import { candidatesApi } from '@/lib/api/candidates'
-import type { Candidate, CandidateFilters } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { AppShell } from '@/components/layout/app-shell'
+import { motion, AnimatePresence } from 'framer-motion'
+import { NewCandidateDialog } from '@/components/candidates/new-candidate-dialog'
 
-const roles = ['Backend Engineer', 'Frontend Engineer', 'DevOps Engineer', 'Full Stack']
-const statuses = ['pending', 'hr_approved', 'scheduled', 'selected', 'rejected']
+const statuses = [
+  { id: 'all', label: 'All' },
+  { id: 'pending', label: 'AI Parsing', color: 'purple' },
+  { id: 'hr_approved', label: 'HR Review', color: 'amber' },
+  { id: 'scheduled', label: 'Interviews', color: 'blue' },
+  { id: 'selected', label: 'Selected', color: 'emerald' },
+  { id: 'rejected', label: 'Rejected', color: 'rose' },
+]
 
 export default function CandidatesPage() {
-  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  const [atsRange, setAtsRange] = useState<[number, number]>([0, 100])
+  const [activeStatus, setActiveStatus] = useState('all')
+  const [isNewCandidateOpen, setIsNewCandidateOpen] = useState(false)
 
-  const { data: candidates = [], isLoading, isError, refetch } = useQuery({
+  const { data: candidates = [], isLoading } = useQuery({
     queryKey: ['candidates'],
     queryFn: () => candidatesApi.list(),
-  })
-
-  const approveMutation = useMutation({
-    mutationFn: candidatesApi.approve,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['candidates'] })
-      toast.success('Candidate approved')
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Approval failed')
-    },
-  })
-
-  const rejectMutation = useMutation({
-    mutationFn: candidatesApi.reject,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['candidates'] })
-      toast.success('Candidate rejected')
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Rejection failed')
-    },
   })
 
   const filteredCandidates = useMemo(() => candidates.filter(c => {
@@ -68,277 +37,223 @@ export default function CandidatesPage() {
       c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.role.toLowerCase().includes(searchQuery.toLowerCase())
     
-    const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(c.role)
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(c.status)
-    const matchesAts = c.ats_score >= atsRange[0] && c.ats_score <= atsRange[1]
+    const matchesStatus = activeStatus === 'all' || c.status === activeStatus
     
-    return matchesSearch && matchesRole && matchesStatus && matchesAts
-  }), [atsRange, candidates, searchQuery, selectedRoles, selectedStatuses])
+    return matchesSearch && matchesStatus
+  }), [candidates, searchQuery, activeStatus])
 
-  const clearFilters = () => {
-    setSelectedRoles([])
-    setSelectedStatuses([])
-    setAtsRange([0, 100])
+  const getStageStyle = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-purple-500/10 text-purple-600 border-purple-500/20'
+      case 'hr_approved': return 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+      case 'scheduled': return 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+      case 'selected': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+      case 'rejected': return 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+      default: return 'bg-secondary text-muted-foreground'
+    }
   }
-
-  const hasActiveFilters = selectedRoles.length > 0 || selectedStatuses.length > 0 || atsRange[0] > 0 || atsRange[1] < 100
-
-  const getRoleCounts = () => {
-    return roles.reduce((acc, role) => {
-      acc[role] = candidates.filter(c => c.role === role).length
-      return acc
-    }, {} as Record<string, number>)
-  }
-
-  const getStatusCounts = () => {
-    return statuses.reduce((acc, status) => {
-      acc[status] = candidates.filter(c => c.status === status).length
-      return acc
-    }, {} as Record<string, number>)
-  }
-
-  const roleCounts = getRoleCounts()
-  const statusCounts = getStatusCounts()
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="font-[Syne] text-2xl font-bold text-foreground flex items-center gap-3">
-              Candidates
-              <Badge className="bg-primary text-primary-foreground">
-                {candidates.length}
-              </Badge>
+      <div className="px-6 md:px-8 space-y-8 pb-10">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-5xl font-black tracking-tight text-foreground">
+              Candidate <span className="text-muted-foreground/40 font-medium">Database</span>
             </h1>
-            <p className="text-muted-foreground">Manage and review all applicants</p>
+            <p className="text-muted-foreground font-medium text-lg">Manage and track your applicant pipeline.</p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 md:flex-none">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search candidates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-full md:w-64 bg-surface-2 border-border"
-              />
-            </div>
-            
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="border-border relative">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filters
-                  {hasActiveFilters && (
-                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary" />
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="bg-surface border-border w-[320px]">
-                <SheetHeader>
-                  <div className="flex items-center justify-between">
-                    <SheetTitle className="text-foreground">Filters</SheetTitle>
-                    {hasActiveFilters && (
-                      <Button variant="ghost" size="sm" onClick={clearFilters} className="text-primary">
-                        Clear all
-                      </Button>
-                    )}
-                  </div>
-                </SheetHeader>
-                
-                <div className="mt-6 space-y-6">
-                  {/* Role Filter */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-foreground">Role</Label>
-                    <div className="space-y-2">
-                      {roles.map(role => (
-                        <div key={role} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`role-${role}`}
-                            checked={selectedRoles.includes(role)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedRoles([...selectedRoles, role])
-                              } else {
-                                setSelectedRoles(selectedRoles.filter(r => r !== role))
-                              }
-                            }}
-                          />
-                          <Label 
-                            htmlFor={`role-${role}`} 
-                            className="text-sm text-muted-foreground flex-1 cursor-pointer"
-                          >
-                            {role}
-                          </Label>
-                          <span className="text-xs text-muted-foreground">({roleCounts[role]})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium text-foreground">Status</Label>
-                    <div className="space-y-2">
-                      {statuses.map(status => (
-                        <div key={status} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`status-${status}`}
-                            checked={selectedStatuses.includes(status)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedStatuses([...selectedStatuses, status])
-                              } else {
-                                setSelectedStatuses(selectedStatuses.filter(s => s !== status))
-                              }
-                            }}
-                          />
-                          <Label 
-                            htmlFor={`status-${status}`} 
-                            className="text-sm text-muted-foreground flex-1 cursor-pointer capitalize"
-                          >
-                            {status.replace('_', ' ')}
-                          </Label>
-                          <span className="text-xs text-muted-foreground">({statusCounts[status]})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ATS Score Filter */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <Label className="text-sm font-medium text-foreground">ATS Score</Label>
-                      <span className="text-xs text-muted-foreground">
-                        {atsRange[0]} - {atsRange[1]}
-                      </span>
-                    </div>
-                    <Slider
-                      value={atsRange}
-                      onValueChange={(value) => setAtsRange(value as [number, number])}
-                      min={0}
-                      max={100}
-                      step={5}
-                      className="py-4"
-                    />
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            <div className="hidden md:flex border border-border rounded-lg overflow-hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  'rounded-none',
-                  viewMode === 'grid' && 'bg-surface-2'
-                )}
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  'rounded-none',
-                  viewMode === 'table' && 'bg-surface-2'
-                )}
-                onClick={() => setViewMode('table')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" className="rounded-full bg-card shadow-sm h-14 px-8 font-bold text-[14px] hover:shadow-md transition-all">
+              <Filter className="h-5 w-5 mr-2" />
+              Filters
+            </Button>
+            <Button className="rounded-full bg-[#09090B] dark:bg-white text-white dark:text-black shadow-xl h-14 px-8 font-bold text-[14px] hover:scale-105 transition-all">
+              Export CSV
+            </Button>
+            <Button 
+              onClick={() => setIsNewCandidateOpen(true)}
+              className="rounded-full bg-primary text-primary-foreground shadow-xl h-14 px-8 font-bold text-[14px] hover:scale-105 transition-all"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Add Candidate
+            </Button>
           </div>
         </div>
 
-        {/* Active Filters Display */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap gap-2">
-            {selectedRoles.map(role => (
-              <Badge key={role} variant="secondary" className="gap-1 bg-surface-2">
-                {role}
-                <button onClick={() => setSelectedRoles(selectedRoles.filter(r => r !== role))}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            {selectedStatuses.map(status => (
-              <Badge key={status} variant="secondary" className="gap-1 bg-surface-2 capitalize">
-                {status.replace('_', ' ')}
-                <button onClick={() => setSelectedStatuses(selectedStatuses.filter(s => s !== status))}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-            {(atsRange[0] > 0 || atsRange[1] < 100) && (
-              <Badge variant="secondary" className="gap-1 bg-surface-2">
-                ATS: {atsRange[0]}-{atsRange[1]}
-                <button onClick={() => setAtsRange([0, 100])}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            )}
+        {/* Toolbar: Search and Status Filters */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-3 bg-card rounded-[2.5rem] shadow-premium">
+          <div className="relative flex-1 max-w-md ml-2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40" />
+            <Input
+              placeholder="Search by name, email or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-12 bg-secondary/10 border-transparent focus:bg-background focus:border-primary/20 rounded-full text-[14px] font-medium"
+            />
           </div>
-        )}
-
-        {/* Results Count */}
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredCandidates.length} of {candidates.length} candidates
-        </p>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 bg-surface-2" />
+          
+          <div className="flex items-center gap-1 p-1 bg-secondary/5 rounded-full overflow-x-auto scrollbar-none">
+            {statuses.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setActiveStatus(s.id)}
+                className={cn(
+                  "whitespace-nowrap px-6 py-3 text-[13px] font-black rounded-full transition-all",
+                  activeStatus === s.id 
+                    ? "bg-foreground text-background shadow-lg" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {s.label}
+                <span className={cn(
+                  "ml-2 opacity-40 text-[11px]",
+                  activeStatus === s.id ? "text-background" : "text-muted-foreground"
+                )}>
+                  {s.id === 'all' ? candidates.length : candidates.filter(c => c.status === s.id).length}
+                </span>
+              </button>
             ))}
           </div>
-        )}
+        </div>
 
-        {!isLoading && isError && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm">
-            Failed to load candidates.
-            <Button variant="link" onClick={() => refetch()} className="px-2">
-              Retry
+        {/* Table Section */}
+        <div className="bg-card rounded-[2.5rem] shadow-premium overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-secondary/10">
+                  <th className="text-left py-6 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Candidate</th>
+                  <th className="text-left py-6 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Role</th>
+                  <th className="text-left py-6 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">ATS Match</th>
+                  <th className="text-left py-6 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Status</th>
+                  <th className="text-left py-6 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Activity</th>
+                  <th className="py-6 px-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-0">
+                <AnimatePresence mode="popLayout">
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td colSpan={6} className="py-8 px-8 border-b border-border/5">
+                          <div className="flex items-center gap-4">
+                             <div className="h-12 w-12 rounded-2xl bg-secondary/20" />
+                             <div className="space-y-2">
+                               <div className="h-5 w-48 bg-secondary/20 rounded-full" />
+                               <div className="h-3 w-32 bg-secondary/20 rounded-full" />
+                             </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredCandidates.map((c, idx) => (
+                    <motion.tr 
+                      key={c.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="hover:bg-secondary/5 transition-colors group cursor-pointer border-b border-border/5 last:border-0"
+                    >
+                      <td className="py-6 px-8">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-2xl bg-foreground text-background flex items-center justify-center text-[15px] font-black shadow-lg shadow-black/5">
+                            {c.name.split(' ').map(n => n[0]).join('')}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[15px] font-black text-foreground group-hover:text-primary transition-colors tracking-tight">{c.name}</div>
+                            <div className="flex items-center gap-1.5 mt-0.5 text-muted-foreground/60">
+                              <Mail className="h-3 w-3" />
+                              <span className="text-[12px] font-bold truncate">{c.email}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-6 px-8">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-xl bg-secondary/10 group-hover:bg-primary/10 transition-colors">
+                            <Briefcase className="h-3.5 w-3.5 text-muted-foreground/60 group-hover:text-primary" />
+                          </div>
+                          <span className="text-[14px] font-black text-foreground tracking-tight">
+                            {c.role}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-6 px-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-24 h-2 bg-secondary/20 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${c.ats_score || 70}%` }}
+                              className={cn(
+                                "h-full rounded-full",
+                                (c.ats_score || 70) >= 85 ? "bg-emerald-500" : (c.ats_score || 70) >= 70 ? "bg-amber-500" : "bg-rose-500"
+                              )} 
+                            />
+                          </div>
+                          <span className={cn(
+                            "text-[13px] font-black tracking-tighter",
+                            (c.ats_score || 70) >= 85 ? "text-emerald-500" : (c.ats_score || 70) >= 70 ? "text-amber-500" : "text-rose-500"
+                          )}>
+                            {c.ats_score || 70}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-6 px-8">
+                        <Badge variant="secondary" className={cn("rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.15em]", getStageStyle(c.status).replace(/border-[a-z]+-500\/20/g, ''))}>
+                          {statuses.find(s => s.id === c.status)?.label || c.status}
+                        </Badge>
+                      </td>
+                      <td className="py-6 px-8">
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-black text-foreground">2h ago</span>
+                          <span className="text-[11px] font-bold text-muted-foreground/40 uppercase tracking-wider">Applied</span>
+                        </div>
+                      </td>
+                      <td className="py-6 px-8 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-secondary/10 hover:bg-primary/10 hover:text-primary">
+                            <Star className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-secondary/10">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {!isLoading && filteredCandidates.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center py-20 bg-card rounded-[1.5rem] shadow-premium"
+          >
+            <div className="h-16 w-16 bg-secondary/30 rounded-full flex items-center justify-center mb-4">
+              <Search className="h-8 w-8 text-muted-foreground/20" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">No candidates found</h3>
+            <p className="text-muted-foreground font-medium mt-1">Try adjusting your search or filters.</p>
+            <Button 
+              variant="link" 
+              onClick={() => { setSearchQuery(''); setActiveStatus('all'); }}
+              className="mt-2 text-primary font-bold"
+            >
+              Clear all filters
             </Button>
-          </div>
-        )}
-
-        {/* Candidates Grid */}
-        {!isLoading && !isError && (
-          <div className={cn(
-            'grid gap-4',
-            viewMode === 'grid' 
-              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
-              : 'grid-cols-1'
-          )}>
-            {filteredCandidates.map((candidate) => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                onApprove={(id) => approveMutation.mutate(id)}
-                onReject={(id) => rejectMutation.mutate(id)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && !isError && filteredCandidates.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No candidates found matching your criteria</p>
-            {hasActiveFilters && (
-              <Button variant="link" onClick={clearFilters} className="text-primary mt-2">
-                Clear filters
-              </Button>
-            )}
-          </div>
+          </motion.div>
         )}
       </div>
+      <NewCandidateDialog 
+        open={isNewCandidateOpen} 
+        onOpenChange={setIsNewCandidateOpen} 
+      />
     </AppShell>
   )
 }

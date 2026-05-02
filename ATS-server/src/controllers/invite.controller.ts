@@ -15,7 +15,7 @@ export const inviteController = {
     try {
       const invite = await inviteService.generate({
         ...req.body,
-        companyId: req.session.companyId,
+        companyId: req.session.companyId!,
         createdByUserId: req.session.userId!,
       })
       return res.status(201).json(invite)
@@ -26,7 +26,7 @@ export const inviteController = {
 
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const invites = await inviteService.listByCompany(req.session.companyId)
+      const invites = await inviteService.listByCompany(req.session.companyId!)
       return res.json(invites)
     } catch (err) {
       return next(err)

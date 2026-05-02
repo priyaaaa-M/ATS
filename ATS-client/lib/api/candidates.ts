@@ -34,4 +34,21 @@ export const candidatesApi = {
     const { data } = await apiClient.post(`/api/candidates/${id}/advance`)
     return data?.candidate ? mapCandidate(data.candidate) : data
   },
+
+  create: async (formData: FormData): Promise<Candidate> => {
+    const { data } = await apiClient.post('/api/candidates', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return mapCandidate(data)
+  },
+  extract: async (formData: FormData): Promise<any> => {
+    const { data } = await apiClient.post('/api/candidates/extract', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return data
+  },
 }

@@ -1,43 +1,78 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
-import { Sidebar } from './sidebar'
-import { TopBar } from './topbar'
-import { useAuthStore } from '@/lib/store/auth-store'
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Sidebar } from "./sidebar";
+import { useAuthStore } from "@/lib/store/auth-store";
+import { useLayoutStore } from "@/lib/store/layout-store";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const { isAuthenticated, isLoading } = useAuthStore()
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const { sidebarCollapsed } = useLayoutStore();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && pathname !== '/login') {
-      router.replace('/login')
-    }
-  }, [isAuthenticated, isLoading, pathname, router])
+    setMounted(true);
+  }, []);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && pathname !== "/login") {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
+
+  if (isLoading || !mounted) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="relative flex h-12 w-12 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
+            <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">
+            Initializing HireOS...
+          </p>
+        </motion.div>
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
-    return null
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <div className="md:pl-[260px]">
-        <TopBar />
-        <main className="p-4 md:p-6">
-          {children}
+      <motion.div
+        initial={false}
+        animate={{
+          paddingLeft: sidebarCollapsed ? "100px" : "280px",
+        }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="flex flex-col min-h-screen"
+      >
+        <main className="flex-1 py-6 md:py-8 max-w-[1600px] mx-auto w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
-      </div>
+      </motion.div>
     </div>
-  )
+  );
 }

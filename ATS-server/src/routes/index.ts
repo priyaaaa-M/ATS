@@ -11,6 +11,7 @@ import { roundsRoutes } from './rounds.routes'
 import { syncRoutes } from './sync.routes'
 import { transcriptRoutes } from './transcript.routes'
 import { webhookRoutes } from './webhook.routes'
+import { driveRoutes } from './drive.routes'
 
 export function registerRoutes(app: Express) {
   app.use('/auth', authRoutes)
@@ -25,4 +26,5 @@ export function registerRoutes(app: Express) {
   app.use('/api/company', companyRoutes)
   app.use('/api/sync', syncRoutes)
   app.use('/api/webhooks', webhookRoutes)
+  app.use('/api/drive', driveRoutes)
 }

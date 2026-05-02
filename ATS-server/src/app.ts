@@ -3,7 +3,10 @@ import express from 'express'
 import session from 'express-session'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import FileStoreFactory from 'session-file-store'
 import { config } from './config'
+
+const FileStore = FileStoreFactory(session)
 import { errorMiddleware } from './middleware/error.middleware'
 import { registerRoutes } from './routes'
 
@@ -33,6 +36,10 @@ export function createApp() {
     session({
       name: config.cookieName,
       secret: config.session.secret,
+      store: new FileStore({
+        path: './sessions',
+        retries: 0,
+      }),
       resave: false,
       saveUninitialized: false,
       cookie: {

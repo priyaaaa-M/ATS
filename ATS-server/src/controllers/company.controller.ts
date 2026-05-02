@@ -4,7 +4,7 @@ import { companyService } from '../services/company.service'
 export const companyController = {
   getProfile: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const profile = await companyService.getProfile(req.session.companyId)
+      const profile = await companyService.getProfile(req.session.companyId!)
       return res.json(profile)
     } catch (err) {
       return next(err)
@@ -14,7 +14,7 @@ export const companyController = {
   updateProfile: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const profile = await companyService.updateProfile(
-        req.session.companyId,
+        req.session.companyId!,
         req.body
       )
       return res.json(profile)
@@ -36,7 +36,7 @@ export const companyController = {
     try {
       const driveConfig = await companyService.saveDriveConfig(
         req.session.userId!,
-        req.session.companyId,
+        req.session.companyId!,
         req.body
       )
       return res.status(201).json(driveConfig)

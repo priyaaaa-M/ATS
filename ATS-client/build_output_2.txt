@@ -1,0 +1,29 @@
+
+> my-project@0.1.0 build
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.3s
+  Skipping validation of types
+  Finished TypeScript config validation in 16ms ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/12) ...
+  Generating static pages using 7 workers (3/12) 
+  Generating static pages using 7 workers (6/12) 
+⨯ useSearchParams() should be wrapped in a suspense boundary at page "/settings". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at S (/Users/rishukumar/Github/ATS/ATS-client/.next/server/chunks/ssr/_097q_ka._.js:2:2692)
+    at r (/Users/rishukumar/Github/ATS/ATS-client/.next/server/chunks/ssr/_097q_ka._.js:4:6760)
+    at /Users/rishukumar/Github/ATS/ATS-client/.next/server/chunks/ssr/app_settings_page_tsx_0~q~t-v._.js:1:43365
+    at an (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84267)
+    at ai (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86086)
+    at al (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:107860)
+    at ao (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:105275)
+    at aa (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84619)
+    at ai (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86135)
+    at ai (/Users/rishukumar/Github/ATS/ATS-client/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:104615)
+Error occurred prerendering page "/settings". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /settings/page: /settings, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null

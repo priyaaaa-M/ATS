@@ -3,203 +3,176 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ATS Theme System - Light/Dark/System mode support */
+/* HireOS Premium Theme System */
 
-/* Brand color - dynamically overridden per company */
 :root {
-  --brand: 239 84% 67%; /* default indigo #6366F1 */
-  --brand-foreground: 0 0% 100%;
-  --radius: 0.625rem;
+  /* Refined Inspiration Palette */
+  --radius: 1.5rem;
+  
+  /* Core Foundation - Light */
+  --bg: 210 20% 98%;         /* #F8F9FB */
+  --surface: 0 0% 100%;       /* #FFFFFF */
+  --surface-2: 210 10% 96%;   /* Very light grey */
+  --border: 210 10% 90%;
+  
+  /* Typography */
+  --ink: 240 10% 4%;          /* #09090B */
+  --ink-2: 240 4% 46%;        /* #71717A */
+  
+  /* Vibrant Accents */
+  --primary-hsl: 250 89% 65%;
+  --brand: 250 89% 65%;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+  --error: 0 84% 60%;
+
+  /* Inspiration Accents */
+  --lime: 74 85% 92%;         /* Lighter Lime */
+  --blue-soft: 210 40% 94%;   /* Lighter Soft Blue */
 }
 
-/* Light Theme (default) */
 :root, .light {
-  /* Base light theme */
-  --background: 0 0% 100%;           /* white */
-  --foreground: 222 47% 11%;         /* near black */
+  --background: var(--bg);
+  --foreground: var(--ink);
   
-  --card: 0 0% 100%;                 /* white */
-  --card-foreground: 222 47% 11%;
+  --card: var(--surface);
+  --card-foreground: var(--ink);
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
   
-  /* Primary uses brand color */
-  --primary: var(--brand);
-  --primary-foreground: var(--brand-foreground);
+  --primary: 240 10% 4%;
+  --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 14% 96%;          /* light gray */
-  --secondary-foreground: 222 47% 11%;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
   
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;    /* medium gray */
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-2);
   
-  --accent: 220 14% 96%;
-  --accent-foreground: 222 47% 11%;
+  --accent: 210 10% 96%;
+  --accent-foreground: 240 10% 4%;
+  
+  --destructive: var(--error);
+  --destructive-foreground: 0 0% 100%;
+  
+  --border: var(--border);
+  --input: var(--border);
+  --ring: 240 10% 4%;
+
+  --sidebar: 240 10% 4%;       
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-accent: 240 10% 12%;
+  --sidebar-border: 240 10% 10%;
+}
+
+.dark {
+  --background: 240 45% 4%;     
+  --foreground: 210 20% 98%;
+  
+  --card: 240 40% 8%;         
+  --card-foreground: 210 20% 98%;
+  
+  --popover: 240 40% 8%;
+  --popover-foreground: 210 20% 98%;
+  
+  --primary: 0 0% 100%;
+  --primary-foreground: 240 45% 4%;
+  
+  --secondary: 240 30% 10%;
+  --secondary-foreground: 210 20% 98%;
+  
+  --muted: 240 30% 10%;
+  --muted-foreground: 240 10% 70%;
+  
+  --accent: 240 30% 12%;
+  --accent-foreground: 210 20% 98%;
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
-  --border: 220 13% 91%;             /* light border */
-  --input: 220 13% 91%;
-  --ring: var(--brand);
-  
-  /* Semantic colors */
-  --success: 152 69% 31%;
-  --success-light: 152 76% 95%;
-  --warning: 38 92% 50%;
-  --warning-light: 48 96% 89%;
-  --info: 199 89% 48%;
-  --info-light: 199 95% 93%;
-  
-  /* Charts */
-  --chart-1: var(--brand);
-  --chart-2: 152 69% 45%;
-  --chart-3: 38 92% 50%;
-  --chart-4: 199 89% 48%;
-  --chart-5: 0 72% 51%;
-  
-  /* Sidebar */
-  --sidebar: 220 14% 98%;
-  --sidebar-foreground: 222 47% 11%;
-  --sidebar-primary: var(--brand);
-  --sidebar-primary-foreground: var(--brand-foreground);
-  --sidebar-accent: 220 14% 96%;
-  --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: var(--brand);
-  
-  /* Surface variants */
-  --surface: 0 0% 100%;
-  --surface-2: 220 14% 98%;
-  --surface-3: 220 14% 96%;
-  --border-strong: 220 13% 85%;
-  --subtle: 220 9% 46%;
-}
+  --border: 240 30% 12%;
+  --input: 240 30% 12%;
+  --ring: 0 0% 100%;
 
-/* Dark Theme */
-.dark {
-  /* Base dark theme */
-  --background: 222 47% 6%;          /* near black #090D1A */
-  --foreground: 210 40% 96%;         /* light text */
-  
-  --card: 222 35% 9%;                /* card bg #0F1521 */
-  --card-foreground: 210 40% 96%;
-  
-  --popover: 222 35% 9%;
-  --popover-foreground: 210 40% 96%;
-  
-  /* Primary uses brand color */
-  --primary: var(--brand);
-  --primary-foreground: var(--brand-foreground);
-  
-  --secondary: 222 28% 12%;          /* elevated surface */
-  --secondary-foreground: 210 40% 96%;
-  
-  --muted: 222 22% 16%;              /* hover states */
-  --muted-foreground: 215 20% 55%;   /* secondary text */
-  
-  --accent: 222 28% 12%;
-  --accent-foreground: 210 40% 96%;
-  
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-  
-  --border: 222 20% 18%;             /* subtle borders */
-  --input: 222 20% 18%;
-  --ring: var(--brand);
-  
-  /* Semantic colors */
-  --success: 152 69% 31%;
-  --success-light: 152 60% 10%;
-  --warning: 38 92% 50%;
-  --warning-light: 38 80% 10%;
-  --info: 199 89% 48%;
-  --info-light: 199 70% 10%;
-  
-  /* Charts */
-  --chart-1: var(--brand);
-  --chart-2: 152 69% 45%;
-  --chart-3: 38 92% 50%;
-  --chart-4: 199 89% 48%;
-  --chart-5: 0 72% 51%;
-  
-  /* Sidebar */
-  --sidebar: 222 35% 9%;
-  --sidebar-foreground: 210 40% 96%;
-  --sidebar-primary: var(--brand);
-  --sidebar-primary-foreground: var(--brand-foreground);
-  --sidebar-accent: 222 28% 12%;
-  --sidebar-accent-foreground: 210 40% 96%;
-  --sidebar-border: 222 20% 18%;
-  --sidebar-ring: var(--brand);
-  
-  /* Surface variants */
-  --surface: 222 35% 9%;
-  --surface-2: 222 28% 12%;
-  --surface-3: 222 22% 16%;
-  --border-strong: 222 20% 25%;
-  --subtle: 215 15% 35%;
+  --sidebar: 240 10% 95%;       /* Soft off-white for better Dark Mode contrast */
+  --sidebar-foreground: 240 10% 10%;
+  --sidebar-primary: 240 10% 4%;
+  --sidebar-accent: 240 10% 92%;
+  --sidebar-border: 240 10% 85%;
 }
 
 @theme inline {
-  --font-sans: 'DM Sans', 'Geist', 'Geist Fallback', sans-serif;
-  --font-display: 'Syne', 'Geist', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Geist Mono', 'Geist Mono Fallback', monospace;
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-mono: var(--font-mono), monospace;
+  
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
+  
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
+  
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
+  
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
+  
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  
   --color-sidebar: hsl(var(--sidebar));
   --color-sidebar-foreground: hsl(var(--sidebar-foreground));
   --color-sidebar-primary: hsl(var(--sidebar-primary));
-  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
   --color-sidebar-accent: hsl(var(--sidebar-accent));
-  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
-  --color-sidebar-ring: hsl(var(--sidebar-ring));
-  /* Brand color utilities */
-  --color-brand: hsl(var(--brand));
-  --color-brand-foreground: hsl(var(--brand-foreground));
-  /* Surface variants */
-  --color-surface: hsl(var(--surface));
-  --color-surface-2: hsl(var(--surface-2));
-  --color-surface-3: hsl(var(--surface-3));
-  /* Semantic colors */
-  --color-success: hsl(var(--success));
-  --color-warning: hsl(var(--warning));
-  --color-info: hsl(var(--info));
+  
+  --color-lime: hsl(var(--lime));
+  --color-blue-soft: hsl(var(--blue-soft));
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: var(--radius);
+  --radius-xl: 2rem;
+  --radius-2xl: 3rem;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
+    box-sizing: border-box;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-size: 14px;
   }
 }
+
+@layer components {
+  .card-premium {
+    @apply bg-card rounded-[var(--radius)] shadow-[0_12px_40px_rgb(0,0,0,0.06)] dark:shadow-[0_12px_40px_rgb(0,0,0,0.3)] transition-all duration-300;
+  }
+  
+  .shadow-premium {
+    @apply shadow-[0_12px_40px_rgb(0,0,0,0.06)] dark:shadow-[0_12px_40px_rgb(0,0,0,0.3)];
+  }
+  
+  .sidebar-item-active {
+    @apply bg-white/10 text-white font-bold;
+  }
+}
+

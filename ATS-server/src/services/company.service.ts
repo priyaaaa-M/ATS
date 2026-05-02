@@ -67,7 +67,7 @@ export const companyService = {
 
   saveDriveConfig: async (
     userId: string,
-    companyId: string,
+    companyId: string | null,
     input: unknown
   ) => {
     const payload = driveConfigSchema.parse(input)

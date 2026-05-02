@@ -3,6 +3,7 @@ import { db } from '../db'
 import { companies, invites, users } from '../db/schema'
 import { AppError } from '../types'
 import { googleService } from './google.service'
+import { syncService } from './sync.service'
 
 function deriveCompanyName(email: string) {
   const domain = email.split('@')[1] || 'company'
@@ -35,6 +36,12 @@ export const authService = {
         })
         .where(eq(users.id, existingUser.id))
         .returning()
+
+      if (updatedUser.role === 'hr') {
+        void syncService.ensureDriveSetup(updatedUser.id).catch((err) => {
+          console.error('[AUTH] Failed to ensure drive setup for existing HR:', err)
+        })
+      }
 
       return { user: updatedUser }
     }
@@ -91,6 +98,10 @@ export const authService = {
         googleEmail: googleUser.email,
       })
       .returning()
+
+    void syncService.ensureDriveSetup(newHr.id).catch((err) => {
+      console.error('[AUTH] Failed to ensure drive setup for new HR:', err)
+    })
 
     return { user: newHr }
   },

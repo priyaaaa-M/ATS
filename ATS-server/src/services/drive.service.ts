@@ -4,6 +4,7 @@ import { db } from '../db'
 import { driveConfigs, roles, users } from '../db/schema'
 import { AppError } from '../types'
 import { createOAuth2Client } from './google.service'
+import { Readable } from 'stream'
 
 const allowedMimeTypes = [
   'application/pdf',
@@ -62,9 +63,9 @@ export const driveService = {
       pageSize: 1,
     })
 
-    const rules = rulesFolder.data.files?.[0]
+    let rules = rulesFolder.data.files?.[0]
     if (!rules?.id) {
-      throw new AppError("Drive root folder must contain a 'rules' subfolder", 400)
+      rules = await driveService.createFolder(userId, 'rules', rootFolderId)
     }
 
     const folders = await drive.files.list({
@@ -113,6 +114,65 @@ export const driveService = {
     )
   },
 
+  findFolderByName: async (userId: string, name: string) => {
+    const drive = await getAuthedDrive(userId)
+    const response = await drive.files.list({
+      q: `mimeType = 'application/vnd.google-apps.folder' and name = '${name}' and trashed = false`,
+      fields: 'files(id,name)',
+      pageSize: 1,
+    })
+    return response.data.files?.[0] || null
+  },
+
+  createFolder: async (userId: string, name: string, parentId?: string) => {
+    const drive = await getAuthedDrive(userId)
+    const fileMetadata: any = {
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+    }
+    if (parentId) {
+      fileMetadata.parents = [parentId]
+    }
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      fields: 'id,name',
+    })
+    return response.data
+  },
+
+  getFolderMetadata: async (userId: string, folderId: string) => {
+    const drive = await getAuthedDrive(userId)
+    try {
+      const response = await drive.files.get({
+        fileId: folderId,
+        fields: 'id,name,mimeType,trashed',
+      })
+      if (response.data.mimeType !== 'application/vnd.google-apps.folder' || response.data.trashed) {
+        return null
+      }
+      return response.data
+    } catch (err) {
+      return null
+    }
+  },
+
+  getFolderContents: async (userId: string, folderId: string) => {
+    const drive = await getAuthedDrive(userId)
+    const response = await drive.files.list({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'files(id,name,mimeType,webViewLink,iconLink)',
+      pageSize: 1000,
+    })
+    return response.data.files?.map(file => ({
+      id: file.id || '',
+      name: file.name || 'Unnamed',
+      mimeType: file.mimeType || '',
+      webViewLink: file.webViewLink || '',
+      iconLink: file.iconLink || '',
+      isFolder: file.mimeType === 'application/vnd.google-apps.folder'
+    })) || []
+  },
+
   downloadFile: async (userId: string, fileId: string) => {
     const drive = await getAuthedDrive(userId)
     const response = await drive.files.get(
@@ -126,5 +186,26 @@ export const driveService = {
     )
 
     return Buffer.from(response.data as ArrayBuffer)
+  },
+
+  uploadFile: async (userId: string, folderId: string, name: string, mimeType: string, buffer: Buffer) => {
+    const drive = await getAuthedDrive(userId)
+    
+    const stream = new Readable()
+    stream.push(buffer)
+    stream.push(null)
+
+    const response = await drive.files.create({
+      requestBody: {
+        name,
+        parents: [folderId],
+      },
+      media: {
+        mimeType,
+        body: stream,
+      },
+      fields: 'id,name,webViewLink',
+    })
+    return response.data
   },
 }
