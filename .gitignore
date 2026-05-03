@@ -11,6 +11,11 @@ build/
 */.next/
 out/
 */out/
+*.tsbuildinfo
+
+# Sessions and local storage
+sessions/
+*/sessions/*.json
 
 # Debug logs
 *.log
@@ -18,6 +23,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 */ts_errors.txt
+*/build_output*.txt
 
 # Environment variables
 .env
