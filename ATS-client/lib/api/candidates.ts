@@ -45,10 +45,13 @@ export const candidatesApi = {
   },
   extract: async (formData: FormData): Promise<any> => {
     const { data } = await apiClient.post('/api/candidates/extract', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
+    return data
+  },
+
+  hrAdvance: async (id: string): Promise<any> => {
+    const { data } = await apiClient.post(`/api/candidates/${id}/hr-advance`)
     return data
   },
 }

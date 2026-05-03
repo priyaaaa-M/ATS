@@ -7,8 +7,7 @@ export const calendarController = {
       const result = await calendarService.getFreeSlots(
         req.body.interviewerEmail,
         req.body.date,
-        req.body.durationMinutes,
-        req.session.userId!
+        req.body.durationMinutes
       )
       return res.json(result)
     } catch (err) {

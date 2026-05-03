@@ -10,7 +10,7 @@ export const candidatesController = {
   // ... existing methods ...
   create: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, email, role, folderId } = req.body
+      const { name, email, role, folderId, phone, parsedData, socials } = req.body
       const file = req.file
 
       if (!file) {
@@ -28,6 +28,22 @@ export const candidatesController = {
 
       // 2. Parse PDF
       const parsed = await parserService.parsePdf(file.buffer, role)
+      
+      let finalParsedData = parsed.sections
+      try {
+        if (parsedData) finalParsedData = typeof parsedData === 'string' ? JSON.parse(parsedData) : parsedData
+      } catch (e) {}
+
+      let finalSocials = parsed.socials
+      try {
+        if (socials) finalSocials = typeof socials === 'string' ? JSON.parse(socials) : socials
+      } catch (e) {}
+      
+      // Merge socials into a combined parsedData object alongside sections
+      const combinedParsedData = {
+        ...finalParsedData,
+        socials: finalSocials,
+      }
 
       // 3. Create Candidate
       const owner = await db.query.users.findFirst({
@@ -40,10 +56,10 @@ export const candidatesController = {
         role: role,
         name: name || parsed.name,
         candidateEmail: email || parsed.email,
-        phone: parsed.phone,
+        phone: phone || parsed.phone,
         resumeUrl: driveFile.webViewLink,
         driveFileId: driveFile.id,
-        parsedData: parsed.sections,
+        parsedData: combinedParsedData as any,
         atsScore: parsed.atsScore,
       })
 
@@ -119,6 +135,15 @@ export const candidatesController = {
   select: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await candidateService.select(req.params.id, req.session.userId!)
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  hrAdvance: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.hrAdvance(req.params.id, req.session.userId!)
       return res.json(result)
     } catch (err) {
       return next(err)

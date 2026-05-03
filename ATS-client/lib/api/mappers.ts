@@ -31,6 +31,7 @@ export function mapCompany(data: any): Company {
     description: data?.description || '',
     website: data?.website || '',
     slack_webhook_url: data?.slackWebhookUrl ?? null,
+    funnel_config: data?.funnelConfig ?? null,
   }
 }
 

@@ -13,6 +13,7 @@ const updateCompanySchema = z.object({
   size: z.string().optional(),
   description: z.string().optional(),
   website: z.string().url().optional().or(z.literal('')),
+  funnelConfig: z.any().optional(),
 })
 
 const driveConfigSchema = z.object({
@@ -48,6 +49,7 @@ export const companyService = {
         logoUrl: payload.logoUrl || null,
         slackWebhookUrl: payload.slackWebhookUrl || null,
         website: payload.website || null,
+        funnelConfig: payload.funnelConfig,
         updatedAt: new Date(),
       })
       .where(eq(companies.id, companyId))

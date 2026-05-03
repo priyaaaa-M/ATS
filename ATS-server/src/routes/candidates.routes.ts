@@ -19,6 +19,7 @@ router.get('/:id', candidatesController.getById)
 router.post('/:id/approve', requireRole('hr'), candidatesController.approve)
 router.post('/:id/reject', requireRole('hr'), candidatesController.reject)
 router.post('/:id/select', requireRole('hr'), candidatesController.select)
+router.post('/:id/hr-advance', requireRole('hr'), candidatesController.hrAdvance)
 router.post(
   '/:id/advance',
   requireRole('interviewer'),

@@ -10,6 +10,7 @@ export interface Company {
   description?: string
   website?: string
   slack_webhook_url?: string | null
+  funnel_config?: any
 }
 
 export interface DriveConfig {
@@ -62,6 +63,11 @@ export interface CandidateParsedData {
   experience: Experience[]
   projects: Project[]
   skills: Skill[]
+  socials?: {
+    linkedin?: string
+    github?: string
+    portfolio?: string
+  }
 }
 
 export interface Education {

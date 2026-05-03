@@ -7,7 +7,11 @@ import {
   Calendar,
   Check,
   Code2,
+  ExternalLink,
+  Github,
+  Globe,
   GraduationCap,
+  Linkedin,
   Mail,
   Phone,
   Star,
@@ -212,6 +216,39 @@ export default function CandidateDetailPage() {
                       <Calendar className="h-4 w-4" />
                       Added {formatDate(candidate.created_at)}
                     </span>
+                    {(candidate.parsed_data as any)?.socials?.linkedin && (
+                      <a
+                        href={`https://${((candidate.parsed_data as any).socials.linkedin).replace(/^https?:\/\//, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Linkedin className="h-4 w-4" />
+                        LinkedIn
+                      </a>
+                    )}
+                    {(candidate.parsed_data as any)?.socials?.github && (
+                      <a
+                        href={`https://${((candidate.parsed_data as any).socials.github).replace(/^https?:\/\//, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Github className="h-4 w-4" />
+                        GitHub
+                      </a>
+                    )}
+                    {(candidate.parsed_data as any)?.socials?.portfolio && (
+                      <a
+                        href={`https://${((candidate.parsed_data as any).socials.portfolio).replace(/^https?:\/\//, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Globe className="h-4 w-4" />
+                        Portfolio
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

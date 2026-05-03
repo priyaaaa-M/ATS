@@ -1,0 +1,31 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerRoutes = registerRoutes;
+const auth_routes_1 = require("./auth.routes");
+const calendar_routes_1 = require("./calendar.routes");
+const candidates_routes_1 = require("./candidates.routes");
+const company_routes_1 = require("./company.routes");
+const feedback_routes_1 = require("./feedback.routes");
+const interviews_routes_1 = require("./interviews.routes");
+const invite_routes_1 = require("./invite.routes");
+const roles_routes_1 = require("./roles.routes");
+const rounds_routes_1 = require("./rounds.routes");
+const sync_routes_1 = require("./sync.routes");
+const transcript_routes_1 = require("./transcript.routes");
+const webhook_routes_1 = require("./webhook.routes");
+const drive_routes_1 = require("./drive.routes");
+function registerRoutes(app) {
+    app.use('/auth', auth_routes_1.authRoutes);
+    app.use('/api/candidates', candidates_routes_1.candidatesRoutes);
+    app.use('/api/roles', roles_routes_1.rolesRoutes);
+    app.use('/api/rounds', rounds_routes_1.roundsRoutes);
+    app.use('/api/interviews', interviews_routes_1.interviewsRoutes);
+    app.use('/api/calendar', calendar_routes_1.calendarRoutes);
+    app.use('/api/invite', invite_routes_1.inviteRoutes);
+    app.use('/api/feedback', feedback_routes_1.feedbackRoutes);
+    app.use('/api/transcripts', transcript_routes_1.transcriptRoutes);
+    app.use('/api/company', company_routes_1.companyRoutes);
+    app.use('/api/sync', sync_routes_1.syncRoutes);
+    app.use('/api/webhooks', webhook_routes_1.webhookRoutes);
+    app.use('/api/drive', drive_routes_1.driveRoutes);
+}

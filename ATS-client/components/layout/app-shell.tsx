@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="flex flex-col min-h-screen"
       >
-        <main className="flex-1 py-6 md:py-8 max-w-[1600px] mx-auto w-full">
+        <main className="flex-1 pt-6 md:pt-8 pb-0 max-w-[1600px] mx-auto w-full flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
@@ -67,6 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col"
             >
               {children}
             </motion.div>

@@ -19,6 +19,7 @@ export const companies = pgTable('companies', {
   size: text('size'),
   description: text('description'),
   website: text('website'),
+  funnelConfig: jsonb('funnel_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 })

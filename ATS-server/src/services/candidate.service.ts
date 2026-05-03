@@ -165,24 +165,22 @@ export const candidateService = {
       ),
     })
 
-    if (!roundOne) {
-      throw new AppError(
-        `No rounds configured for ${candidate.role}. Configure in Settings.`,
-        400
-      )
-    }
+    const allRounds = roundOne
+      ? await db
+          .select()
+          .from(interviewRounds)
+          .where(
+            and(
+              eq(interviewRounds.userId, hrUserId),
+              eq(interviewRounds.roleName, candidate.role)
+            )
+          )
+      : []
 
-    const allRounds = await db
-      .select()
-      .from(interviewRounds)
-      .where(
-        and(
-          eq(interviewRounds.userId, hrUserId),
-          eq(interviewRounds.roleName, candidate.role)
-        )
-      )
-
-    const totalRounds = Math.max(...allRounds.map((round) => round.roundNumber))
+    const totalRounds =
+      allRounds.length > 0
+        ? Math.max(...allRounds.map((r) => r.roundNumber))
+        : candidate.totalRounds || 1
 
     const [updated] = await db
       .update(candidates)
@@ -190,21 +188,133 @@ export const candidateService = {
         status: 'hr_approved',
         currentRound: 1,
         totalRounds,
-        assignedInterviewerEmail: roundOne.interviewerGmail,
+        assignedInterviewerEmail: roundOne?.interviewerGmail ?? candidate.assignedInterviewerEmail,
         roundStatus: 'pending',
         updatedAt: new Date(),
       })
       .where(eq(candidates.id, candidateId))
       .returning()
 
-    await slackService.notifyInterviewerAssigned(
-      roundOne.interviewerGmail,
-      candidate.name || candidate.candidateEmail || 'Candidate',
-      candidate.role,
-      1
-    )
+    if (roundOne) {
+      await slackService.notifyInterviewerAssigned(
+        roundOne.interviewerGmail,
+        candidate.name || candidate.candidateEmail || 'Candidate',
+        candidate.role,
+        1
+      )
+    }
 
     return updated
+  },
+
+  hrAdvance: async (candidateId: string, hrUserId: string) => {
+    const candidate = await getOwnedCandidate(candidateId, hrUserId)
+
+    // If pending → move to hr_approved (already handled by approve, but as fallback)
+    if (candidate.status === 'pending') {
+      const [updated] = await db
+        .update(candidates)
+        .set({ status: 'hr_approved', currentRound: 1, roundStatus: 'pending', updatedAt: new Date() })
+        .where(eq(candidates.id, candidateId))
+        .returning()
+      return { candidate: updated }
+    }
+
+    // If hr_approved → move to next round or select if no rounds configured
+    if (candidate.status === 'hr_approved') {
+      const nextRound = (candidate.currentRound || 1) + 1
+      const totalRounds = candidate.totalRounds || 1
+
+      if (nextRound > totalRounds) {
+        // Move to selected if all rounds done
+        const [selected] = await db
+          .update(candidates)
+          .set({ status: 'selected', roundStatus: 'completed', updatedAt: new Date() })
+          .where(eq(candidates.id, candidateId))
+          .returning()
+
+        await slackService.notifyCandidateSelected(
+          selected.name || selected.candidateEmail || 'Candidate',
+          selected.role
+        )
+        return { selected: true, candidate: selected }
+      }
+
+      const nextRoundConfig = await db.query.interviewRounds.findFirst({
+        where: and(
+          eq(interviewRounds.userId, candidate.userId),
+          eq(interviewRounds.roleName, candidate.role),
+          eq(interviewRounds.roundNumber, nextRound)
+        ),
+      })
+
+      const [updated] = await db
+        .update(candidates)
+        .set({
+          currentRound: nextRound,
+          assignedInterviewerEmail: nextRoundConfig?.interviewerGmail ?? candidate.assignedInterviewerEmail,
+          roundStatus: 'pending',
+          status: 'scheduled',
+          updatedAt: new Date(),
+        })
+        .where(eq(candidates.id, candidateId))
+        .returning()
+
+      if (nextRoundConfig) {
+        await slackService.notifyInterviewerAssigned(
+          nextRoundConfig.interviewerGmail,
+          updated.name || updated.candidateEmail || 'Candidate',
+          updated.role,
+          nextRound
+        )
+      }
+
+      return { candidate: updated }
+    }
+
+    // If scheduled → advance to next round or select
+    if (candidate.status === 'scheduled') {
+      const nextRound = (candidate.currentRound || 1) + 1
+      const totalRounds = candidate.totalRounds || 1
+
+      if (nextRound > totalRounds) {
+        const [selected] = await db
+          .update(candidates)
+          .set({ status: 'selected', roundStatus: 'completed', updatedAt: new Date() })
+          .where(eq(candidates.id, candidateId))
+          .returning()
+
+        await slackService.notifyCandidateSelected(
+          selected.name || selected.candidateEmail || 'Candidate',
+          selected.role
+        )
+        return { selected: true, candidate: selected }
+      }
+
+      const nextRoundConfig = await db.query.interviewRounds.findFirst({
+        where: and(
+          eq(interviewRounds.userId, candidate.userId),
+          eq(interviewRounds.roleName, candidate.role),
+          eq(interviewRounds.roundNumber, nextRound)
+        ),
+      })
+
+      const [updated] = await db
+        .update(candidates)
+        .set({
+          currentRound: nextRound,
+          assignedInterviewerEmail: nextRoundConfig?.interviewerGmail ?? candidate.assignedInterviewerEmail,
+          roundStatus: 'pending',
+          status: 'hr_approved',
+          updatedAt: new Date(),
+        })
+        .where(eq(candidates.id, candidateId))
+        .returning()
+
+      return { candidate: updated }
+    }
+
+    throw new AppError('Cannot advance candidate from current status', 400)
   },
 
   advanceToNextRound: async (

@@ -19,6 +19,7 @@ export const companyApi = {
     size?: string
     description?: string
     website?: string
+    funnelConfig?: any
   }) => {
     const { data } = await apiClient.put('/api/company/profile', payload)
     return mapCompany(data)

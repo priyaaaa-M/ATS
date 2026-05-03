@@ -37,6 +37,14 @@ function extractPhone(text: string) {
   return text.match(/[\+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}/g)?.[0]
 }
 
+function extractSocials(text: string) {
+  return {
+    linkedin: text.match(/linkedin\.com\/in\/[a-zA-Z0-9_-]+/i)?.[0],
+    github: text.match(/github\.com\/[a-zA-Z0-9_-]+/i)?.[0],
+    portfolio: text.match(/(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9_-]+\.(com|net|org|io|dev|me))(?!\/in\/|\/github\.com)/i)?.[0],
+  }
+}
+
 function extractName(text: string) {
   const candidates = text
     .split('\n')
@@ -167,6 +175,7 @@ export const parserService = {
 
     const email = extractEmail(text)
     const phone = extractPhone(text)
+    const socials = extractSocials(text)
     const name = extractName(text)
     let atsScore = calculateAtsScore(sections, role)
     if (email) atsScore += 10
@@ -176,6 +185,7 @@ export const parserService = {
       name,
       email,
       phone,
+      socials,
       atsScore: Math.min(atsScore, 100),
       sections,
     }

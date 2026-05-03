@@ -39,6 +39,11 @@ export interface ParsedResumeResult {
   name?: string
   email?: string
   phone?: string
+  socials?: {
+    linkedin?: string
+    github?: string
+    portfolio?: string
+  }
   atsScore: number
   sections: ParsedResumeSections
 }

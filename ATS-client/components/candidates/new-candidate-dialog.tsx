@@ -46,7 +46,10 @@ export function NewCandidateDialog({ open, onOpenChange }: NewCandidateDialogPro
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     role: '',
+    socials: { linkedin: '', github: '', portfolio: '' },
+    parsedData: null as any,
   })
   const [file, setFile] = useState<File | null>(null)
   const [fileUrl, setFileUrl] = useState<string | null>(null)
@@ -59,7 +62,7 @@ export function NewCandidateDialog({ open, onOpenChange }: NewCandidateDialogPro
       setSelectedFolder(null)
       setFile(null)
       setFileUrl(null)
-      setFormData({ name: '', email: '', role: '' })
+      setFormData({ name: '', email: '', phone: '', role: '', socials: { linkedin: '', github: '', portfolio: '' }, parsedData: null })
     }
   }, [open, currentFolderId])
 
@@ -125,6 +128,13 @@ export function NewCandidateDialog({ open, onOpenChange }: NewCandidateDialogPro
             ...prev,
             name: data.name || prev.name,
             email: data.email || prev.email,
+            phone: data.phone || prev.phone,
+            socials: {
+              linkedin: data.socials?.linkedin || prev.socials.linkedin,
+              github: data.socials?.github || prev.socials.github,
+              portfolio: data.socials?.portfolio || prev.socials.portfolio,
+            },
+            parsedData: data.sections || prev.parsedData,
           }))
           toast.success('Information extracted from resume')
         }
@@ -146,8 +156,11 @@ export function NewCandidateDialog({ open, onOpenChange }: NewCandidateDialogPro
       const payload = new FormData()
       payload.append('name', formData.name)
       payload.append('email', formData.email)
+      payload.append('phone', formData.phone)
       payload.append('role', formData.role)
       payload.append('folderId', selectedFolder.id)
+      if (formData.socials) payload.append('socials', JSON.stringify(formData.socials))
+      if (formData.parsedData) payload.append('parsedData', JSON.stringify(formData.parsedData))
       payload.append('resume', file)
 
       await (candidatesApi as any).create(payload)
@@ -290,22 +303,95 @@ export function NewCandidateDialog({ open, onOpenChange }: NewCandidateDialogPro
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">Email</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="john@example.com"
+                          value={formData.email}
+                          onChange={e => setFormData({...formData, email: e.target.value})}
+                          className="h-12 rounded-2xl bg-secondary/10 border-transparent focus:bg-background transition-all font-bold px-4"
+                        />
+                        {extracting && !formData.email && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">Phone</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="+1 234 567 8900"
+                          value={formData.phone}
+                          onChange={e => setFormData({...formData, phone: e.target.value})}
+                          className="h-12 rounded-2xl bg-secondary/10 border-transparent focus:bg-background transition-all font-bold px-4"
+                        />
+                        {extracting && !formData.phone && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">Email Address</Label>
+                    <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">LinkedIn URL</Label>
                     <div className="relative">
                       <Input 
-                        placeholder="e.g. john@example.com"
-                        value={formData.email}
-                        onChange={e => setFormData({...formData, email: e.target.value})}
+                        placeholder="linkedin.com/in/johndoe"
+                        value={formData.socials.linkedin}
+                        onChange={e => setFormData({...formData, socials: {...formData.socials, linkedin: e.target.value}})}
                         className="h-12 rounded-2xl bg-secondary/10 border-transparent focus:bg-background transition-all font-bold px-4"
                       />
-                      {extracting && !formData.email && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                      {extracting && !formData.socials.linkedin && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">GitHub URL</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="github.com/johndoe"
+                          value={formData.socials.github}
+                          onChange={e => setFormData({...formData, socials: {...formData.socials, github: e.target.value}})}
+                          className="h-12 rounded-2xl bg-secondary/10 border-transparent focus:bg-background transition-all font-bold px-4"
+                        />
+                        {extracting && !formData.socials.github && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">Portfolio</Label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="johndoe.com"
+                          value={formData.socials.portfolio}
+                          onChange={e => setFormData({...formData, socials: {...formData.socials, portfolio: e.target.value}})}
+                          className="h-12 rounded-2xl bg-secondary/10 border-transparent focus:bg-background transition-all font-bold px-4"
+                        />
+                        {extracting && !formData.socials.portfolio && <div className="absolute inset-0 bg-secondary/20 animate-pulse rounded-2xl" />}
+                      </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Parsed Data Summary */}
+                {formData.parsedData && (
+                  <div className="space-y-2 pt-4 border-t border-border/5">
+                    <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-1">Extracted Information</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[12px] font-bold">
+                        {formData.parsedData.experience?.length || 0} Experiences
+                      </div>
+                      <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[12px] font-bold">
+                        {formData.parsedData.education?.length || 0} Educations
+                      </div>
+                      <div className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-[12px] font-bold">
+                        {formData.parsedData.skills?.length || 0} Skills
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Role Selection */}
-                <div className="space-y-3">
+                <div className="space-y-3 pt-4 border-t border-border/5">
                   <div className="flex items-center justify-between mb-1 px-1">
                     <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Select Job Role</Label>
                     <button 
