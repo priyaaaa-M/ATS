@@ -34,4 +34,28 @@ export const candidatesApi = {
     const { data } = await apiClient.post(`/api/candidates/${id}/advance`)
     return data?.candidate ? mapCandidate(data.candidate) : data
   },
+
+  moveToPipeline: async (id: string) => {
+    const { data } = await apiClient.post(`/api/candidates/${id}/move-to-pipeline`)
+    return mapCandidate(data)
+  },
+
+  notInterested: async (id: string, reason?: string) => {
+    const { data } = await apiClient.post(`/api/candidates/${id}/not-interested`, {
+      reason,
+    })
+    return mapCandidate(data)
+  },
+
+  addNote: async (id: string, text: string) => {
+    const { data } = await apiClient.post(`/api/candidates/${id}/notes`, { text })
+    return mapCandidate(data)
+  },
+
+  moveStage: async (id: string, stageName: string) => {
+    const { data } = await apiClient.post(`/api/candidates/${id}/move-stage`, {
+      stageName,
+    })
+    return mapCandidate(data)
+  },
 }

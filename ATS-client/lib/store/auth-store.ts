@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         set({ user: null, company: null, isAuthenticated: false, isLoading: false })
         if (typeof document !== 'undefined') {
-          applyBrandColor('#6366F1')
+          applyBrandColor('#0D7377')
         }
       },
 

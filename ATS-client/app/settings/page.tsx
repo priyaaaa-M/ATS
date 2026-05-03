@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Building2, Link2, Settings, UserPlus, Users } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -11,7 +11,7 @@ import { InvitePanel } from '@/components/settings/invite-panel'
 import { RoundsPanel } from '@/components/settings/rounds-panel'
 import { ThemeToggle } from '@/components/providers/theme-provider'
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'company'
   const [activeTab, setActiveTab] = useState(initialTab)
@@ -100,5 +100,13 @@ export default function SettingsPage() {
         </Tabs>
       </div>
     </AppShell>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading settings...</div>}>
+      <SettingsPageContent />
+    </Suspense>
   )
 }

@@ -14,12 +14,12 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { cn, hexToHsl } from '@/lib/utils'
 
 const presetColors = [
-  { name: 'Indigo', value: '#6366F1' },
+  { name: 'Teal', value: '#0D7377' },
   { name: 'Emerald', value: '#10B981' },
-  { name: 'Rose', value: '#F43F5E' },
+  { name: 'Coral', value: '#F97316' },
   { name: 'Amber', value: '#F59E0B' },
   { name: 'Cyan', value: '#06B6D4' },
-  { name: 'Coral', value: '#F97316' },
+  { name: 'Rose', value: '#F43F5E' },
 ]
 
 export function CompanyProfile() {
@@ -33,7 +33,7 @@ export function CompanyProfile() {
   const [form, setForm] = useState({
     name: '',
     logoUrl: '',
-    brandColor: '#6366F1',
+    brandColor: '#0D7377',
     industry: '',
     size: '',
     description: '',
@@ -45,7 +45,7 @@ export function CompanyProfile() {
     setForm({
       name: profile.name || '',
       logoUrl: profile.logo_url || '',
-      brandColor: profile.brand_color || '#6366F1',
+      brandColor: profile.brand_color || '#0D7377',
       industry: profile.industry || '',
       size: profile.size || '',
       description: profile.description || '',

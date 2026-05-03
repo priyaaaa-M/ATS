@@ -4,11 +4,16 @@ import type {
   DriveConfig,
   Feedback,
   Interview,
+  InterviewStage,
   InterviewRound,
   Invite,
+  MatchBreakdownItem,
   Role,
+  RoleDetails,
   SyncStatus,
   Transcript,
+  ScreeningQuestion,
+  ScreeningAnswer,
   User,
 } from '@/lib/types'
 
@@ -25,12 +30,14 @@ export function mapCompany(data: any): Company {
     id: data?.id || '',
     name: data?.name || '',
     logo_url: data?.logoUrl ?? null,
-    brand_color: data?.brandColor || '#6366F1',
+    brand_color: data?.brandColor || '#0D7377',
     industry: data?.industry || '',
     size: data?.size || '',
     description: data?.description || '',
     website: data?.website || '',
     slack_webhook_url: data?.slackWebhookUrl ?? null,
+    slack_channel_name: data?.slackChannelName ?? null,
+    slack_events: data?.slackEvents ?? null,
   }
 }
 
@@ -39,7 +46,14 @@ export function mapUser(data: any): User {
     id: data?.id || '',
     email: data?.email || '',
     name: data?.name || '',
-    role: data?.role === 'interviewer' ? 'interviewer' : 'hr',
+    role:
+      data?.role === 'executive' ||
+      data?.role === 'hiring_manager' ||
+      data?.role === 'recruiter' ||
+      data?.role === 'team_member' ||
+      data?.role === 'interviewer'
+        ? data.role
+        : 'hr',
     avatar_url: null,
     company_id: data?.companyId || '',
   }
@@ -103,6 +117,13 @@ export function mapCandidate(data: any): Candidate {
     phone: data?.phone || '',
     role: data?.role || '',
     status: data?.status || 'pending',
+    inbox_status: data?.inboxStatus || 'inbox',
+    current_stage: data?.currentStage ?? null,
+    stage_history: data?.stageHistory || [],
+    notes: data?.notes || [],
+    screening_answers: data?.screeningAnswers || [],
+    match_score: data?.matchScore ?? data?.atsScore ?? 0,
+    match_breakdown: data?.matchBreakdown || [],
     current_round: data?.currentRound || 1,
     total_rounds: data?.totalRounds || 1,
     assigned_interviewer_email: data?.assignedInterviewerEmail ?? null,
@@ -129,7 +150,37 @@ export function mapCandidate(data: any): Candidate {
 export function mapRole(data: any): Role {
   return {
     id: data?.id || '',
+    name: data?.title || data?.name || '',
+  }
+}
+
+export function mapRoleDetails(data: any): RoleDetails {
+  return {
+    id: data?.id || '',
+    companyId: data?.companyId ?? null,
+    userId: data?.userId ?? null,
     name: data?.name || '',
+    title: data?.title ?? null,
+    description: data?.description ?? null,
+    hiringGoals: data?.hiringGoals ?? null,
+    salaryMin: data?.salaryMin ?? null,
+    salaryMax: data?.salaryMax ?? null,
+    salaryCurrency: data?.salaryCurrency ?? 'INR',
+    expectations: data?.expectations ?? null,
+    activities: data?.activities ?? null,
+    workTags: data?.workTags ?? [],
+    sellingPoints: data?.sellingPoints ?? null,
+    screeningGuide: data?.screeningGuide ?? null,
+    outreachTemplate: data?.outreachTemplate ?? null,
+    screeningQuestions: (data?.screeningQuestions || []) as ScreeningQuestion[],
+    interviewStages: (data?.interviewStages || []) as InterviewStage[],
+    status: data?.status ?? 'open',
+    hiringManagerId: data?.hiringManagerId ?? null,
+    assignedRecruiterIds: data?.assignedRecruiterIds ?? [],
+    createdAt: data?.createdAt,
+    updatedAt: data?.updatedAt,
+    candidateCount: data?.candidateCount ?? 0,
+    hiringManagerName: data?.hiringManagerName ?? null,
   }
 }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { authApi } from '@/lib/api'
+import { authApi, candidatesApi, rolesApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import {
   Sheet,
@@ -28,11 +29,11 @@ import { Separator } from '@/components/ui/separator'
 
 const hrNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users2, label: 'Candidates', href: '/candidates', count: 20 },
   { icon: Briefcase, label: 'Roles', href: '/roles' },
+  { icon: Users2, label: 'Candidates', href: '/candidates' },
   { icon: CalendarDays, label: 'Interviews', href: '/interviews' },
   { icon: Settings2, label: 'Settings', href: '/settings' },
-  { icon: CheckCircle2, label: 'Selected', href: '/selected', count: 3 },
+  { icon: CheckCircle2, label: 'Selected', href: '/selected' },
 ]
 
 const interviewerNavItems = [
@@ -45,8 +46,27 @@ export function MobileNav() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, company, logout } = useAuthStore()
+  const { data: roles = [] } = useQuery({
+    queryKey: ['role-details'],
+    queryFn: rolesApi.list,
+    enabled: Boolean(user && user.role !== 'interviewer'),
+  })
+  const { data: inboxCandidates = [] } = useQuery({
+    queryKey: ['candidates', { inboxStatus: 'inbox' }],
+    queryFn: () => candidatesApi.list({ inboxStatus: 'inbox' }),
+    enabled: Boolean(user && user.role !== 'interviewer'),
+  })
   
   const navItems = user?.role === 'interviewer' ? interviewerNavItems : hrNavItems
+  const enrichedNavItems = navItems.map((item) => {
+    if (item.label === 'Roles') {
+      return { ...item, count: roles.filter((role) => role.status === 'open').length }
+    }
+    if (item.label === 'Candidates') {
+      return { ...item, count: inboxCandidates.length }
+    }
+    return item
+  })
   
   const getInitials = (name: string) => {
     return name
@@ -99,7 +119,7 @@ export function MobileNav() {
         {/* Navigation */}
         <nav className="flex-1 p-3">
           <ul className="space-y-1">
-            {navItems.map((item) => {
+            {enrichedNavItems.map((item) => {
               const isActive = pathname === item.href
               return (
                 <li key={item.href}>
@@ -115,7 +135,7 @@ export function MobileNav() {
                   >
                     <item.icon className={cn('h-5 w-5', isActive && 'text-primary')} />
                     <span className="flex-1">{item.label}</span>
-                    {item.count && (
+                    {item.count !== undefined && item.count !== null && item.count > 0 && (
                       <Badge 
                         variant="secondary" 
                         className={cn(

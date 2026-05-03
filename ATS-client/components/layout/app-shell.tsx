@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar } from './sidebar'
 import { TopBar } from './topbar'
+import { CandidateFAB } from '@/components/CandidateFAB'
 import { useAuthStore } from '@/lib/store/auth-store'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <CandidateFAB />
     </div>
   )
 }

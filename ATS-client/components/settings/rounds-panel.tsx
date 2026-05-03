@@ -19,7 +19,7 @@ export function RoundsPanel() {
 
   const { data: roles = [], isLoading: isRolesLoading } = useQuery({
     queryKey: ['roles'],
-    queryFn: rolesApi.list,
+    queryFn: rolesApi.listLegacy,
   })
 
   const { data: rounds = [], isLoading: isRoundsLoading } = useQuery({

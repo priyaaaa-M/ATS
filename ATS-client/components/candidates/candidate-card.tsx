@@ -60,6 +60,8 @@ export function CandidateCard({ candidate, onApprove, onReject }: CandidateCardP
     .toUpperCase()
 
   const avatarColor = roleColors[candidate.role] || 'hsl(var(--primary))'
+  const inboxStatus = candidate.inbox_status || 'inbox'
+  const score = candidate.match_score || candidate.ats_score || 0
 
   return (
     <motion.div
@@ -82,15 +84,15 @@ export function CandidateCard({ candidate, onApprove, onReject }: CandidateCardP
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <Badge 
-                  variant="outline" 
-                  className={cn('text-[10px]', statusColors[candidate.status])}
-                >
-                  {statusLabels[candidate.status]}
-                </Badge>
-              </div>
-              <Badge className={cn('text-xs font-mono', getScoreColor(candidate.ats_score))}>
-                {candidate.ats_score}
+              <Badge 
+                variant="outline" 
+                className={cn('text-[10px]', statusColors[candidate.status])}
+              >
+                {statusLabels[candidate.status]}
+              </Badge>
+            </div>
+              <Badge className={cn('text-xs font-mono', getScoreColor(score))}>
+                {score}
               </Badge>
             </div>
 
@@ -137,7 +139,7 @@ export function CandidateCard({ candidate, onApprove, onReject }: CandidateCardP
 
             {/* Actions */}
             <div className="flex items-center gap-2" onClick={(e) => e.preventDefault()}>
-              {candidate.status === 'pending' && (
+              {inboxStatus === 'inbox' && (
                 <>
                   <Button 
                     size="sm" 
@@ -145,7 +147,7 @@ export function CandidateCard({ candidate, onApprove, onReject }: CandidateCardP
                     onClick={() => onApprove?.(candidate.id)}
                   >
                     <Check className="mr-1 h-3 w-3" />
-                    Approve
+                    Interview
                   </Button>
                   <Button 
                     size="sm" 
@@ -157,7 +159,7 @@ export function CandidateCard({ candidate, onApprove, onReject }: CandidateCardP
                   </Button>
                 </>
               )}
-              {candidate.status !== 'pending' && (
+              {inboxStatus !== 'inbox' && (
                 <Button 
                   size="sm" 
                   variant="outline"

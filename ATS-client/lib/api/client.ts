@@ -3,7 +3,7 @@
 import axios from 'axios'
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  baseURL: '',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -16,7 +16,11 @@ apiClient.interceptors.response.use(
   (error) => {
     if (typeof window !== 'undefined' && error.response?.status === 401) {
       if (!window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login'
+        if (window.top && window.top !== window) {
+          window.top.location.assign('/login')
+        } else {
+          window.location.assign('/login')
+        }
       }
     }
     return Promise.reject(error)

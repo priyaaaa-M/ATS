@@ -15,6 +15,8 @@ export const companyApi = {
     logoUrl?: string
     brandColor?: string
     slackWebhookUrl?: string
+    slackChannelName?: string
+    slackEvents?: string[]
     industry?: string
     size?: string
     description?: string

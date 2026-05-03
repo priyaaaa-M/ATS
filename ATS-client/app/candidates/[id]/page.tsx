@@ -51,6 +51,7 @@ export default function CandidateDetailPage() {
   const [duration, setDuration] = useState(45)
   const [manualTranscript, setManualTranscript] = useState('')
   const [manualSummary, setManualSummary] = useState('')
+  const [noteText, setNoteText] = useState('')
 
   const { data: candidate, isLoading, isError, refetch } = useQuery({
     queryKey: ['candidate', candidateId],
@@ -128,6 +129,16 @@ export default function CandidateDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['transcript', candidateId, candidate?.current_round] })
       setManualTranscript('')
       setManualSummary('')
+    },
+  })
+
+  const addNoteMutation = useMutation({
+    mutationFn: ({ text }: { text: string }) => candidatesApi.addNote(candidateId, text),
+    onSuccess: () => {
+      toast.success('Note added')
+      queryClient.invalidateQueries({ queryKey: ['candidate', candidateId] })
+      queryClient.invalidateQueries({ queryKey: ['candidates'] })
+      setNoteText('')
     },
   })
 
@@ -243,7 +254,7 @@ export default function CandidateDetailPage() {
 
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="flex h-auto flex-wrap gap-2 bg-transparent p-0">
-            {['overview', 'experience', 'education', 'skills', 'projects', 'interview', 'transcript'].map((tab) => (
+          {['overview', 'experience', 'education', 'skills', 'projects', 'interview', 'notes', 'transcript'].map((tab) => (
               <TabsTrigger
                 key={tab}
                 value={tab}
@@ -255,31 +266,90 @@ export default function CandidateDetailPage() {
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card className="bg-surface border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-primary">
-                    {candidate.parsed_data.experience.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Experience Entries</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-surface border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-primary">
-                    {candidate.parsed_data.skills.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Skills</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-surface border-border">
-                <CardContent className="p-4 text-center">
-                  <p className="text-3xl font-bold text-primary">
-                    {candidate.parsed_data.projects.length}
-                  </p>
-                  <p className="text-sm text-muted-foreground">Projects</p>
-                </CardContent>
-              </Card>
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-[320px_1fr]">
+                <Card className="bg-surface border-border">
+                  <CardContent className="p-6 text-center">
+                    <div
+                      className="mx-auto flex h-28 w-28 items-center justify-center rounded-full"
+                      style={{
+                        background: `conic-gradient(hsl(var(--brand)) ${(candidate.match_score || candidate.ats_score || 0) * 3.6}deg, hsl(var(--surface-2)) 0deg)`,
+                      }}
+                    >
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-background text-3xl font-bold">
+                        {candidate.match_score || candidate.ats_score}
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm font-medium">
+                      {(candidate.match_score || candidate.ats_score || 0) >= 75
+                        ? 'Strong Match'
+                        : (candidate.match_score || candidate.ats_score || 0) >= 50
+                          ? 'Potential Match'
+                          : 'Weak Match'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Matched {candidate.match_breakdown?.filter((item) => item.matched).length || 0} of{' '}
+                      {candidate.match_breakdown?.length || 0} criteria
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-surface border-border">
+                  <CardHeader>
+                    <CardTitle>Match Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {(candidate.match_breakdown || []).length > 0 ? (
+                      (candidate.match_breakdown || []).map((item, index) => (
+                        <div
+                          key={`${item.questionText}-${index}`}
+                          className={cn(
+                            'grid gap-3 rounded-xl border p-3 text-sm md:grid-cols-[1.2fr_1fr_1fr_120px_80px]',
+                            item.matched
+                              ? 'border-success/20 bg-success/10'
+                              : 'border-destructive/20 bg-destructive/10'
+                          )}
+                        >
+                          <div className="truncate font-medium">{item.questionText}</div>
+                          <div className="truncate text-muted-foreground">{item.answer || '—'}</div>
+                          <div className="truncate text-muted-foreground">{item.idealAnswer || '—'}</div>
+                          <div>{item.matched ? '✓ matched' : '✗ not matched'}</div>
+                          <div className="font-mono text-xs">W{item.score || 0}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No screening breakdown available yet.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card className="bg-surface border-border">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">
+                      {candidate.parsed_data.experience.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Experience Entries</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-surface border-border">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">
+                      {candidate.parsed_data.skills.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Skills</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-surface border-border">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-primary">
+                      {candidate.parsed_data.projects.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Projects</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
 
@@ -476,6 +546,49 @@ export default function CandidateDetailPage() {
                     </>
                   ) : (
                     <p className="text-muted-foreground">No interview scheduled yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notes">
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+              <Card className="bg-surface border-border">
+                <CardHeader>
+                  <CardTitle>Add Note</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    value={noteText}
+                    onChange={(event) => setNoteText(event.target.value)}
+                    placeholder="Add a note..."
+                    className="min-h-40"
+                  />
+                  <Button
+                    onClick={() => addNoteMutation.mutate({ text: noteText })}
+                    disabled={!noteText.trim() || addNoteMutation.isPending}
+                  >
+                    Save Note
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-surface border-border">
+                <CardHeader>
+                  <CardTitle>Notes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(candidate.notes || []).length > 0 ? (
+                    (candidate.notes || []).slice().reverse().map((note, index) => (
+                      <div key={`${note.createdAt}-${index}`} className="rounded-xl border border-border bg-surface-2 p-4">
+                        <p className="text-sm font-medium">{note.authorName || note.author_name || 'Team'}</p>
+                        <p className="text-xs text-muted-foreground">{note.createdAt ? formatDateTime(note.createdAt) : ''}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{note.text}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No notes yet.</p>
                   )}
                 </CardContent>
               </Card>

@@ -10,6 +10,8 @@ export interface Company {
   description?: string
   website?: string
   slack_webhook_url?: string | null
+  slack_channel_name?: string | null
+  slack_events?: string[] | null
 }
 
 export interface DriveConfig {
@@ -32,7 +34,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: 'hr' | 'interviewer'
+  role: 'executive' | 'hiring_manager' | 'recruiter' | 'interviewer' | 'team_member' | 'hr'
   avatar_url?: string | null
   company_id: string
 }
@@ -44,6 +46,13 @@ export interface Candidate {
   phone: string
   role: string
   status: 'pending' | 'hr_approved' | 'scheduled' | 'selected' | 'rejected'
+  inbox_status?: 'inbox' | 'pipeline' | 'rejected'
+  current_stage?: string | null
+  stage_history?: CandidateStageHistory[]
+  notes?: CandidateNote[]
+  screening_answers?: ScreeningAnswer[]
+  match_score?: number
+  match_breakdown?: MatchBreakdownItem[]
   current_round: number
   total_rounds: number
   assigned_interviewer_email: string | null
@@ -55,6 +64,37 @@ export interface Candidate {
   latest_interview?: Interview | null
   feedback?: Feedback | Feedback[] | null
   transcript?: Transcript | null
+}
+
+export interface CandidateStageHistory {
+  stage: string
+  timestamp: string
+  moved_by?: string | null
+}
+
+export interface CandidateNote {
+  text: string
+  authorId?: string | null
+  author_name?: string
+  authorName?: string
+  createdAt?: string
+}
+
+export interface ScreeningAnswer {
+  question_id?: string
+  question_text: string
+  answer?: string
+  matched?: boolean
+  score?: number
+}
+
+export interface MatchBreakdownItem {
+  questionId?: string
+  questionText: string
+  answer?: string
+  idealAnswer?: string
+  matched: boolean
+  score: number
 }
 
 export interface CandidateParsedData {
@@ -134,11 +174,58 @@ export interface CandidateFilters {
   min_ats_score?: number
   round?: number
   search?: string
+  inboxStatus?: 'inbox' | 'pipeline' | 'rejected'
 }
 
 export interface Role {
   id: string
   name: string
+}
+
+export interface RoleDetails {
+  id: string
+  companyId?: string | null
+  userId?: string | null
+  name: string
+  title?: string | null
+  description?: string | null
+  hiringGoals?: string | null
+  salaryMin?: number | null
+  salaryMax?: number | null
+  salaryCurrency?: string | null
+  expectations?: string | null
+  activities?: string | null
+  workTags?: string[] | null
+  sellingPoints?: string | null
+  screeningGuide?: string | null
+  outreachTemplate?: string | null
+  screeningQuestions?: ScreeningQuestion[]
+  interviewStages?: InterviewStage[]
+  status?: 'draft' | 'open' | 'paused' | 'closed' | string | null
+  hiringManagerId?: string | null
+  assignedRecruiterIds?: string[] | null
+  createdAt?: string
+  updatedAt?: string
+  candidateCount?: number
+  hiringManagerName?: string | null
+}
+
+export interface ScreeningQuestion {
+  id?: string
+  question: string
+  type: 'text' | 'number' | 'select' | 'boolean'
+  options?: string[]
+  required?: boolean
+  ideal_answer?: string
+  weight?: number
+}
+
+export interface InterviewStage {
+  name: string
+  order: number
+  assigned_to?: string[]
+  instructions?: string
+  auto_advance?: boolean
 }
 
 export interface InterviewRound {

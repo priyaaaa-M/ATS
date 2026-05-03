@@ -7,7 +7,7 @@
 
 /* Brand color - dynamically overridden per company */
 :root {
-  --brand: 239 84% 67%; /* default indigo #6366F1 */
+  --brand: 174 72% 28%; /* default teal #0D7377 */
   --brand-foreground: 0 0% 100%;
   --radius: 0.625rem;
 }
@@ -47,15 +47,15 @@
   /* Semantic colors */
   --success: 152 69% 31%;
   --success-light: 152 76% 95%;
-  --warning: 38 92% 50%;
-  --warning-light: 48 96% 89%;
+  --warning: 22 90% 58%;
+  --warning-light: 24 100% 92%;
   --info: 199 89% 48%;
   --info-light: 199 95% 93%;
   
   /* Charts */
   --chart-1: var(--brand);
-  --chart-2: 152 69% 45%;
-  --chart-3: 38 92% 50%;
+  --chart-2: 22 90% 58%;
+  --chart-3: 152 69% 45%;
   --chart-4: 199 89% 48%;
   --chart-5: 0 72% 51%;
   
@@ -112,15 +112,15 @@
   /* Semantic colors */
   --success: 152 69% 31%;
   --success-light: 152 60% 10%;
-  --warning: 38 92% 50%;
-  --warning-light: 38 80% 10%;
+  --warning: 22 90% 58%;
+  --warning-light: 22 80% 10%;
   --info: 199 89% 48%;
   --info-light: 199 70% 10%;
   
   /* Charts */
   --chart-1: var(--brand);
-  --chart-2: 152 69% 45%;
-  --chart-3: 38 92% 50%;
+  --chart-2: 22 90% 58%;
+  --chart-3: 152 69% 45%;
   --chart-4: 199 89% 48%;
   --chart-5: 0 72% 51%;
   

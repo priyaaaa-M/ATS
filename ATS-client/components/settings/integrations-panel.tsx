@@ -15,6 +15,8 @@ export function IntegrationsPanel() {
   const queryClient = useQueryClient()
   const [driveFolderLink, setDriveFolderLink] = useState('')
   const [slackWebhookUrl, setSlackWebhookUrl] = useState('')
+  const [slackChannelName, setSlackChannelName] = useState('')
+  const [slackEvents, setSlackEvents] = useState<string[]>([])
   const [isPolling, setIsPolling] = useState(false)
 
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -42,6 +44,12 @@ export function IntegrationsPanel() {
   useEffect(() => {
     if (profile?.slack_webhook_url) {
       setSlackWebhookUrl(profile.slack_webhook_url)
+    }
+    if (profile?.slack_channel_name) {
+      setSlackChannelName(profile.slack_channel_name)
+    }
+    if (profile?.slack_events) {
+      setSlackEvents(profile.slack_events)
     }
   }, [profile])
 
@@ -76,7 +84,12 @@ export function IntegrationsPanel() {
   })
 
   const saveSlack = useMutation({
-    mutationFn: (webhookUrl: string) => companyApi.updateProfile({ slackWebhookUrl: webhookUrl }),
+    mutationFn: () =>
+      companyApi.updateProfile({
+        slackWebhookUrl,
+        slackChannelName,
+        slackEvents,
+      }),
     onSuccess: () => {
       toast.success('Slack webhook saved')
       queryClient.invalidateQueries({ queryKey: ['company-profile'] })
@@ -161,11 +174,11 @@ export function IntegrationsPanel() {
             <Slack className="h-5 w-5 text-primary" />
             Slack Notifications
           </CardTitle>
-          <CardDescription>Save a Slack webhook to receive ATS updates.</CardDescription>
+          <CardDescription>Connect Slack to receive hiring notifications and intake updates.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="slack-webhook">Slack Webhook URL</Label>
+            <Label htmlFor="slack-webhook">Webhook URL for sending notifications</Label>
             <Input
               id="slack-webhook"
               placeholder="https://hooks.slack.com/services/..."
@@ -173,19 +186,49 @@ export function IntegrationsPanel() {
               onChange={(event) => setSlackWebhookUrl(event.target.value)}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="slack-channel">Hiring channel name</Label>
+            <Input
+              id="slack-channel"
+              placeholder="#great-hires-only"
+              value={slackChannelName}
+              onChange={(event) => setSlackChannelName(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              We will monitor this channel for resume attachments and candidate referrals.
+            </p>
+          </div>
           {profile?.slack_webhook_url ? (
             <div className="rounded-xl border border-success/30 bg-success/10 p-3 text-sm text-success">
-              Connected
+              ✓ Connected to Slack
             </div>
           ) : null}
           <div className="grid gap-2 text-sm text-muted-foreground">
-            <label><input type="checkbox" checked readOnly className="mr-2" />New candidate parsed from Drive</label>
-            <label><input type="checkbox" checked readOnly className="mr-2" />Candidate approved by HR</label>
-            <label><input type="checkbox" checked readOnly className="mr-2" />Interview scheduled</label>
-            <label><input type="checkbox" checked readOnly className="mr-2" />Candidate selected</label>
+            {[
+              'New candidate parsed from Drive',
+              'Candidate moved to Inbox',
+              'Candidate approved to pipeline',
+              'Interview scheduled',
+              'Candidate selected/hired',
+            ].map((event) => (
+              <label key={event} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={slackEvents.includes(event)}
+                  onChange={(checkedEvent) => {
+                    setSlackEvents((current) =>
+                      checkedEvent.target.checked
+                        ? [...current, event]
+                        : current.filter((item) => item !== event)
+                    )
+                  }}
+                />
+                {event}
+              </label>
+            ))}
           </div>
           <Button
-            onClick={() => saveSlack.mutate(slackWebhookUrl)}
+            onClick={() => saveSlack.mutate()}
             disabled={saveSlack.isPending || !slackWebhookUrl}
           >
             {saveSlack.isPending ? 'Saving...' : 'Save Slack Webhook'}

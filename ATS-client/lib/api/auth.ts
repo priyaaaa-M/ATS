@@ -5,7 +5,9 @@ import { mapCompany, mapUser } from './mappers'
 
 export const authApi = {
   getMe: async () => {
-    const { data } = await apiClient.get('/auth/me')
+    const { data } = await apiClient.get('/auth/me', {
+      withCredentials: true,
+    })
     if (!data?.authenticated || !data?.user) {
       return { authenticated: false, user: null, company: null }
     }
@@ -18,14 +20,15 @@ export const authApi = {
   },
 
   loginWithGoogle: (inviteToken?: string) => {
-    const url = new URL(
-      '/auth/google',
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-    )
+    const url = new URL('/auth/google', window.location.origin)
     if (inviteToken) {
       url.searchParams.set('inviteToken', inviteToken)
     }
-    window.location.href = url.toString()
+    if (window.top && window.top !== window) {
+      window.top.location.assign(url.toString())
+      return
+    }
+    window.location.assign(url.toString())
   },
 
   logout: async () => {

@@ -1,21 +1,8 @@
 import type { Metadata } from 'next'
-import { DM_Sans, JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { AppProviders } from '@/components/providers/app-providers'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import './globals.css'
-
-const dmSans = DM_Sans({ 
-  subsets: ["latin"],
-  variable: '--font-dm-sans',
-  weight: ['300', '400', '500', '600'],
-})
-
-const jetbrainsMono = JetBrains_Mono({ 
-  subsets: ["latin"],
-  variable: '--font-jetbrains-mono',
-  weight: ['400', '500'],
-})
 
 export const metadata: Metadata = {
   title: 'TechCorp — ATS',
@@ -53,7 +40,7 @@ export default function RootLayout({
           rel="stylesheet" 
         />
       </head>
-      <body className={`${dmSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         <ThemeProvider>
           <AppProviders>{children}</AppProviders>
         </ThemeProvider>

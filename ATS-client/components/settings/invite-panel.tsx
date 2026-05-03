@@ -20,7 +20,7 @@ export function InvitePanel() {
 
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
-    queryFn: rolesApi.list,
+    queryFn: rolesApi.listLegacy,
   })
 
   const { data: rounds = [] } = useQuery({
