@@ -7,17 +7,19 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 next.user-config.*
 
-# Environment variables
-# env files
-.env
-.env.*
-ATS-server/.env
-
-# Common ignores
-node_modules
+# Build output
+dist/
+build/
 .next/
-.DS_Store
 
+# Dependencies
+node_modules/
+
+# Environment variables
 .env
 .env.*
-ATS-server/.env
+*.local
+
+# System files
+.DS_Store
+Thumbs.db
