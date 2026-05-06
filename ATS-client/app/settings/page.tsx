@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Building2, Link2, Settings, UserPlus, Users } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -11,7 +11,7 @@ import { InvitePanel } from '@/components/settings/invite-panel'
 import { RoundsPanel } from '@/components/settings/rounds-panel'
 import { ThemeToggle } from '@/components/providers/theme-provider'
 
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'company'
   const [activeTab, setActiveTab] = useState(initialTab)
@@ -26,35 +26,35 @@ export default function SettingsPage() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex h-auto flex-wrap gap-2 bg-transparent p-0">
-            <TabsTrigger 
-              value="company" 
+            <TabsTrigger
+              value="company"
               className="border border-border bg-surface data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Building2 className="mr-2 h-4 w-4" />
               Company Profile
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="integrations"
               className="border border-border bg-surface data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Link2 className="mr-2 h-4 w-4" />
               Integrations
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="rounds"
               className="border border-border bg-surface data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Users className="mr-2 h-4 w-4" />
               Interview Rounds
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="invite"
               className="border border-border bg-surface data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <UserPlus className="mr-2 h-4 w-4" />
               Invite Interviewers
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="preferences"
               className="border border-border bg-surface data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
@@ -88,7 +88,7 @@ export default function SettingsPage() {
                 </h2>
                 <ThemeToggle />
               </div>
-              
+
               <div className="rounded-lg border border-border bg-card p-6">
                 <h2 className="text-lg font-semibold text-foreground mb-4">Notifications</h2>
                 <p className="text-muted-foreground text-sm">
@@ -100,5 +100,13 @@ export default function SettingsPage() {
         </Tabs>
       </div>
     </AppShell>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <SettingsContent />
+    </Suspense>
   )
 }

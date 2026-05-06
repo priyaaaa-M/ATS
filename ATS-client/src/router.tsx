@@ -25,23 +25,36 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteErrorState /> },
   { path: '/invite/:token', element: <InviteAcceptPage />, errorElement: <RouteErrorState /> },
   {
+    path: '/',
     element: <ProtectedRoute role="hr" />,
     errorElement: <RouteErrorState />,
-    children: [{
-      element: <AppShell />,
-      errorElement: <RouteErrorState />,
-      children: [
-        { path: '/dashboard', element: <DashboardPage />, errorElement: <RouteErrorState /> },
-        { path: '/candidates', element: <CandidatesPage />, errorElement: <RouteErrorState /> },
-        { path: '/roles', element: <RolesPage />, errorElement: <RouteErrorState /> },
-        { path: '/interviews', element: <InterviewsPage />, errorElement: <RouteErrorState /> },
-        { path: '/settings', element: <SettingsPage />, errorElement: <RouteErrorState /> },
-      ],
-    }],
+    children: [
+      {
+        element: <AppShell />,
+        errorElement: <RouteErrorState />,
+        children: [
+          { path: 'dashboard', element: <DashboardPage />, errorElement: <RouteErrorState /> },
+          { path: 'candidates', element: <CandidatesPage />, errorElement: <RouteErrorState /> },
+          { path: 'roles', element: <RolesPage />, errorElement: <RouteErrorState /> },
+          { path: 'interviews', element: <InterviewsPage />, errorElement: <RouteErrorState /> },
+          { path: 'settings', element: <SettingsPage />, errorElement: <RouteErrorState /> },
+        ],
+      },
+    ],
   },
   {
+    path: '/',
     element: <ProtectedRoute role="interviewer" />,
     errorElement: <RouteErrorState />,
-    children: [{ element: <AppShell />, errorElement: <RouteErrorState />, children: [{ path: '/interviewer', element: <InterviewerDashboardPage />, errorElement: <RouteErrorState /> }] }],
+    children: [
+      {
+        element: <AppShell />,
+        errorElement: <RouteErrorState />,
+        children: [
+          { path: 'interviewer', element: <InterviewerDashboardPage />, errorElement: <RouteErrorState /> },
+        ],
+      },
+    ],
   },
+  { path: '*', element: <Navigate to="/" replace />, errorElement: <RouteErrorState /> },
 ])
