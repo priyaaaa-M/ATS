@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { Briefcase } from 'lucide-react'
 import { useRoles } from '../../hooks/useRoles'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Button } from '../../components/ui/button'

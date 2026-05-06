@@ -1,4 +1,4 @@
-import { format, isAfter, setMinutes, setHours } from 'date-fns'
+import { format, isAfter } from 'date-fns'
 import { useMemo, useState } from 'react'
 import { useFreeSlots } from '../../../hooks/useFreeSlots'
 import type { Candidate, FreeSlot } from '../../../types'

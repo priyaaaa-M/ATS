@@ -12,6 +12,7 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { useCandidates } from '../../hooks/useCandidates'
+import type { InterviewStage } from '../../types'
 
 export function CandidatesPage() {
   const qc = useQueryClient()
@@ -23,6 +24,19 @@ export function CandidatesPage() {
   const search = params.get('search') ?? ''
   const { data: roles = [] } = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list })
   const { data: stages = [] } = useQuery({ queryKey: ['stages'], queryFn: () => roundsApi.list(role === 'all' ? roles[0]?.name ?? '' : role), enabled: roles.length > 0 })
+  const pipelineStages = useMemo<InterviewStage[]>(
+    () =>
+      stages.map((stage) => ({
+        id: stage.id,
+        name: `Round ${stage.roundNumber}`,
+        order: stage.roundNumber,
+        duration: 45,
+        interviewerName: stage.interviewerName,
+        interviewerGmail: stage.interviewerGmail,
+        updatedAt: stage.updatedAt,
+      })),
+    [stages],
+  )
   const filters = { role: role === 'all' ? undefined : role, inboxStatus: view === 'all' ? undefined : view }
   const { data: candidates = [] } = useCandidates(filters)
   const filtered = useMemo(() => {
@@ -57,7 +71,7 @@ export function CandidatesPage() {
         </div>
       </div>
       {view === 'pipeline' ? (
-        <PipelineBoard stages={stages} candidates={filtered} onMove={(id, stageName) => moveStage.mutate({ id, stageName })} />
+        <PipelineBoard stages={pipelineStages} candidates={filtered} onMove={(id, stageName) => moveStage.mutate({ id, stageName })} />
       ) : filtered.length ? (
         <div className="rounded-[14px] border bg-[var(--bg-card)] p-2">
           {filtered.map((candidate) => <CandidateRow key={candidate.id} candidate={candidate} onClick={() => setParams((current) => { current.set('candidate', candidate.id); return current })} />)}
