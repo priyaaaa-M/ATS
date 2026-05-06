@@ -17,6 +17,8 @@ ATS-server/.env
 node_modules
 .next/
 .DS_Store
+dist/
+build/
 
 .env
 .env.*
