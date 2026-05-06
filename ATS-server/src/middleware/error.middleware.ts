@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import { ZodError } from 'zod'
 import { config } from '../config'
 import { AppError } from '../types'
 
@@ -21,6 +22,14 @@ export function errorMiddleware(
     return res.status(400).json({
       error: 'Validation Error',
       message: err.message,
+    })
+  }
+
+  if (err instanceof ZodError) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      message: err.issues[0]?.message || 'Invalid request payload',
+      issues: err.issues,
     })
   }
 

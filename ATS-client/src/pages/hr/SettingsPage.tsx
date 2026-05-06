@@ -1,41 +1,93 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FolderSync, Mail, Plus, Trash2 } from 'lucide-react'
+import {
+  Building2,
+  CheckCircle2,
+  FolderSync,
+  Link2,
+  Mail,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
+import type { ChangeEvent, ReactNode } from 'react'
 import { companyApi, inviteApi, roundsApi, syncApi } from '../../api'
-import { PageHeader } from '../../components/shared/PageHeader'
+import { StageModal } from '../../components/settings/StageModal'
 import { Button } from '../../components/ui/button'
-import { Card, CardContent } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs'
-import { StageModal } from '../../components/settings/StageModal'
+import { Textarea } from '../../components/ui/textarea'
 import { useRoles } from '../../hooks/useRoles'
 import { useAuthStore } from '../../store/authStore'
-import { Textarea } from '../../components/ui/textarea'
-import type { InterviewRound } from '../../types'
+import type { Company, InterviewRound } from '../../types'
+
+const brandOrange = '#EC5B24'
+
+function SectionTitle({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <div className="mb-5 flex items-start gap-3">
+      <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-[9px] border border-[#e5e7eb] bg-[#f8fafc] text-[#344054]">
+        {icon}
+      </div>
+      <div>
+        <h2 className="text-[17px] font-semibold tracking-[-0.015em] text-[#0b1220]">{title}</h2>
+        <p className="mt-1 text-[13px] leading-5 text-[#667085]">{description}</p>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[12px] font-semibold text-[#344054]">{label}</span>
+      {children}
+    </label>
+  )
+}
 
 export function SettingsPage() {
   const qc = useQueryClient()
   const company = useAuthStore((state) => state.company)
   const setCompany = useAuthStore((state) => state.setCompany)
-  const { data: roles = [] } = useRoles()
+  const { data: roles = [], isLoading: rolesLoading, isError: rolesError } = useRoles()
   const [selectedRole, setSelectedRole] = useState('')
-  const [profileForm, setProfileForm] = useState({
+  const [typedRole, setTypedRole] = useState('')
+  const [profileForm, setProfileForm] = useState<Partial<Company>>({
     name: company?.name ?? '',
     website: company?.website ?? '',
     description: company?.description ?? '',
     industry: company?.industry ?? '',
     size: company?.size ?? '',
-    brandColor: '#EC5B24',
+    brandColor: company?.brandColor ?? brandOrange,
     logoUrl: company?.logoUrl ?? '',
   })
   const [inviteForm, setInviteForm] = useState({ roleName: '', roundNumber: '', email: '' })
-  const [integrationForm, setIntegrationForm] = useState({ driveFolderLink: '', slackWebhookUrl: '', slackChannel: '' })
-  const [message, setMessage] = useState('')
+  const [integrationForm, setIntegrationForm] = useState({ driveFolderLink: '', slackWebhookUrl: company?.slackWebhookUrl ?? '' })
+  const [statusMessage, setStatusMessage] = useState('')
   const [editingRound, setEditingRound] = useState<InterviewRound | null>(null)
+  const [stageModal, setStageModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const { data: rounds = [] } = useQuery({ queryKey: ['rounds', selectedRole], queryFn: () => roundsApi.list(selectedRole), enabled: Boolean(selectedRole), staleTime: 30_000 })
+
+  const activeRoleName = selectedRole || typedRole.trim()
+
+  const { data: rounds = [] } = useQuery({
+    queryKey: ['rounds', activeRoleName],
+    queryFn: () => roundsApi.list(activeRoleName),
+    enabled: Boolean(activeRoleName),
+    staleTime: 30_000,
+  })
   const { data: inviteRounds = [] } = useQuery({
     queryKey: ['rounds', 'invite', inviteForm.roleName],
     queryFn: () => roundsApi.list(inviteForm.roleName),
@@ -45,72 +97,71 @@ export function SettingsPage() {
   const { data: invites = [] } = useQuery({ queryKey: ['invites'], queryFn: inviteApi.list, staleTime: 30_000 })
   const { data: driveConfig } = useQuery({ queryKey: ['drive-config'], queryFn: companyApi.getDriveConfig, staleTime: 60_000 })
   const { data: syncStatus } = useQuery({ queryKey: ['sync-status'], queryFn: syncApi.status, refetchInterval: 3000 })
-  const [stageModal, setStageModal] = useState(false)
+
   const profileMutation = useMutation({
     mutationFn: companyApi.updateProfile,
     onSuccess: (data) => {
       setCompany(data)
       qc.invalidateQueries({ queryKey: ['company'] })
-      setMessage('Profile updated')
-      document.documentElement.style.setProperty('--brand', '#EC5B24')
+      document.documentElement.style.setProperty('--brand', data.brandColor || profileForm.brandColor || brandOrange)
+      setStatusMessage('Settings saved')
     },
   })
   const roundCreateMutation = useMutation({
     mutationFn: roundsApi.create,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rounds', selectedRole] })
+    onSuccess: (round) => {
+      const savedRoleName = round.roleName || activeRoleName
+      setSelectedRole(savedRoleName)
+      setTypedRole('')
+      qc.invalidateQueries({ queryKey: ['roles'] })
+      qc.invalidateQueries({ queryKey: ['rounds', savedRoleName] })
       setStageModal(false)
       setEditingRound(null)
-      setMessage('Round saved')
+      setStatusMessage('Round saved')
     },
   })
   const roundUpdateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<InterviewRound> }) => roundsApi.update(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['rounds', selectedRole] })
+      qc.invalidateQueries({ queryKey: ['rounds', activeRoleName] })
       setStageModal(false)
       setEditingRound(null)
-      setMessage('Round updated')
+      setStatusMessage('Round updated')
     },
   })
   const roundDeleteMutation = useMutation({
     mutationFn: roundsApi.remove,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['rounds', selectedRole] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['rounds', activeRoleName] })
+      setStatusMessage('Round removed')
+    },
   })
   const inviteMutation = useMutation({
     mutationFn: inviteApi.generate,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invites'] })
-      setMessage('Invite sent')
+      setStatusMessage('Invite sent')
     },
   })
   const driveSaveMutation = useMutation({
     mutationFn: companyApi.saveDriveConfig,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['drive-config'] })
-      setMessage('Drive settings saved')
+      setStatusMessage('Drive settings saved')
     },
   })
   const syncMutation = useMutation({
     mutationFn: syncApi.start,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['sync-status'] })
-      setMessage('Sync started')
-    },
-    onError: (error: unknown) => {
-      const status = error && typeof error === 'object' && 'response' in error
-        ? (error as { response?: { status?: number } }).response?.status
-        : undefined
-      if (status === 409) {
-        setMessage('Sync already running. Showing live progress below.')
-        return
-      }
-      setMessage('Unable to start sync')
+      setStatusMessage('Sync started')
     },
   })
 
   const selectedRound = inviteRounds.find((round) => String(round.roundNumber) === inviteForm.roundNumber)
   const nextRoundNumber = rounds.length ? Math.max(...rounds.map((round) => round.roundNumber)) + 1 : 1
+  const brandColor = profileForm.brandColor || brandOrange
+  const companyInitial = (profileForm.name || company?.name || 'C').slice(0, 1).toUpperCase()
 
   const handleLogoUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -123,171 +174,265 @@ export function SettingsPage() {
     reader.readAsDataURL(file)
   }
 
+  const updateBrand = (value: string) => {
+    setProfileForm((current) => ({ ...current, brandColor: value }))
+    document.documentElement.style.setProperty('--brand', value)
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader title="Settings" description="Manage your company profile, integrations, and interview workflows." />
-      <Tabs defaultValue="company">
-        <TabsList className="mb-6 w-full gap-8 border-b pb-0">
-          <TabsTrigger value="company">Company Profile</TabsTrigger>
-          <TabsTrigger value="rounds">Interview Rounds</TabsTrigger>
-          <TabsTrigger value="invite">Invite Interviewers</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-        </TabsList>
-        <TabsContent value="company">
-          <Card className="border-[var(--border)] bg-[var(--bg-card)]"><CardContent className="grid gap-8 pt-6 lg:grid-cols-[320px_1fr]">
-            <div className="space-y-4">
-              <p className="text-sm font-semibold text-[var(--text-1)]">Company Branding</p>
-              <input ref={fileInputRef} type="file" accept=".png,.svg,image/png,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-48 w-full items-center justify-center rounded-[18px] border border-dashed bg-[var(--bg-page)]">
-                <div className="text-center">
-                  {profileForm.logoUrl
-                    ? <img src={profileForm.logoUrl} alt="Company logo" className="mx-auto mb-4 h-20 w-20 rounded-full object-cover" />
-                    : <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand)] text-2xl font-semibold text-white">{(profileForm.name || company?.name || 'A').slice(0, 1).toUpperCase()}</div>}
-                  <p className="text-base font-medium">Upload company logo</p>
-                  <p className="mt-1 text-sm text-[var(--text-2)]">PNG or SVG, 200x200 recommended</p>
-                </div>
-              </button>
+    <div className="min-h-[calc(100vh-48px)] bg-[#f6f8fb] text-[#101828]">
+      <div className="bg-white/95 px-8 py-7 shadow-[inset_0_-1px_0_#eef2f6]">
+        <div className="mx-auto flex max-w-[1280px] items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-[#e5e7eb] bg-[#f8fafc] text-[#1f2937]">
+              <Building2 className="h-4 w-4" />
             </div>
-            <div className="space-y-5">
-              <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
-                <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-2)]">Brand colour</p>
-                  <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-[18px] border-4 border-[var(--brand-mid)]" style={{ background: profileForm.brandColor }} />
-                    <Input value={profileForm.brandColor} onChange={(e) => { setProfileForm((current) => ({ ...current, brandColor: e.target.value })); document.documentElement.style.setProperty('--brand', e.target.value) }} />
+            <div>
+              <h1 className="text-[30px] font-semibold tracking-[-0.035em] text-[#0b1220]">Settings</h1>
+              <p className="mt-1 text-[14px] text-[#667085]">Manage company settings, workflows, and integrations.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {statusMessage ? (
+              <div className="flex items-center gap-2 rounded-full bg-[#ecfdf3] px-3 py-1.5 text-[12px] font-medium text-[#027a48]">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {statusMessage}
+              </div>
+            ) : null}
+            <button className="rounded-[8px] p-2 text-[#344054] transition hover:bg-[#eef2f6]" type="button" aria-label="Search settings">
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="profile">
+        <div className="mx-auto max-w-[1280px] px-8 pt-6">
+        <TabsList className="w-full gap-1 rounded-[10px] border border-[#e5e7eb] bg-[#f8fafc] p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          {[
+            ['profile', 'Basic Info'],
+            ['rounds', 'Interview Rounds'],
+            ['invites', 'Team Invites'],
+            ['integrations', 'Integrations'],
+          ].map(([value, label]) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="rounded-[7px] border-b-0 px-5 py-2.5 text-[13px] font-semibold text-[#667085] transition hover:text-[#101828] data-[state=active]:border-transparent data-[state=active]:bg-white data-[state=active]:text-[#0b1220] data-[state=active]:shadow-[0_1px_2px_rgba(16,24,40,0.08)]"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        </div>
+
+        <div className="mx-auto max-w-[1280px] px-8 py-7">
+          <TabsContent value="profile" className="max-w-[1120px]">
+            <SectionTitle icon={<Building2 className="h-4 w-4" />} title="Company profile" description="Update your public company identity and profile details." />
+
+            <div className="space-y-6">
+              <div className="rounded-[14px] border border-[#e5e7eb] bg-white p-6 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                <div className="grid gap-7 md:grid-cols-[220px_1fr]">
+                  <input ref={fileInputRef} type="file" accept=".png,.svg,image/png,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex h-[176px] flex-col items-center justify-center rounded-[10px] border border-dashed border-[#cfd5df] bg-[#fbfcfd] text-center transition hover:border-[#667085] hover:bg-white"
+                  >
+                    {profileForm.logoUrl ? (
+                      <img src={profileForm.logoUrl} alt="Company logo" className="h-14 w-14 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-14 w-14 items-center justify-center rounded-full text-xl font-semibold text-white" style={{ background: brandColor }}>
+                        {companyInitial}
+                      </div>
+                    )}
+                    <span className="mt-3 flex items-center gap-1.5 text-[13px] font-medium text-[#344054]"><Upload className="h-3.5 w-3.5" /> Upload logo</span>
+                    <span className="mt-1 text-[11px] text-[#98a2b3]">PNG or SVG, 200x200 ideal</span>
+                  </button>
+
+                <div className="grid content-start gap-5 md:grid-cols-2">
+                    <Field label="Company name">
+                      <Input value={profileForm.name ?? ''} onChange={(event) => setProfileForm((current) => ({ ...current, name: event.target.value }))} placeholder="Company name" />
+                    </Field>
+                    <Field label="Website">
+                      <Input value={profileForm.website ?? ''} onChange={(event) => setProfileForm((current) => ({ ...current, website: event.target.value }))} placeholder="https://company.com" />
+                    </Field>
+                    <Field label="Industry">
+                      <Input value={profileForm.industry ?? ''} onChange={(event) => setProfileForm((current) => ({ ...current, industry: event.target.value }))} placeholder="Industry" />
+                    </Field>
+                    <Field label="Company size">
+                      <Input value={profileForm.size ?? ''} onChange={(event) => setProfileForm((current) => ({ ...current, size: event.target.value }))} placeholder="Company size" />
+                    </Field>
                   </div>
                 </div>
-                <div className="rounded-[16px] bg-[var(--brand-light)] p-4 text-sm text-[var(--text-2)]">
-                  <p className="font-medium text-[var(--text-1)]">Live preview updates the entire interface</p>
-                  <p className="mt-1">Sidebar accents, buttons, active tabs, and badges all follow the same company brand color.</p>
+              </div>
+
+              <div className="rounded-[14px] border border-[#e5e7eb] bg-white p-6 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                <SectionTitle icon={<Link2 className="h-4 w-4" />} title="Brand settings" description="Use your brand colour throughout the ATS workspace." />
+                <div className="grid gap-5 md:grid-cols-[240px_1fr]">
+                  <Field label="Brand colour">
+                    <div className="flex gap-3">
+                      <input type="color" value={brandColor} onChange={(event) => updateBrand(event.target.value)} className="h-10 w-12 cursor-pointer rounded-md border border-[#d0d5dd] bg-white p-1" />
+                      <Input value={brandColor} onChange={(event) => updateBrand(event.target.value)} className="uppercase" />
+                    </div>
+                  </Field>
+                  <Field label="Description">
+                    <Textarea value={profileForm.description ?? ''} onChange={(event) => setProfileForm((current) => ({ ...current, description: event.target.value }))} placeholder="Short company overview for candidate-facing templates" />
+                  </Field>
                 </div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Input value={profileForm.name} onChange={(e) => setProfileForm((current) => ({ ...current, name: e.target.value }))} placeholder="Company Name" />
-                <Input value={profileForm.website} onChange={(e) => setProfileForm((current) => ({ ...current, website: e.target.value }))} placeholder="Website" />
-                <Input value={profileForm.industry} onChange={(e) => setProfileForm((current) => ({ ...current, industry: e.target.value }))} placeholder="Industry" />
-                <Input value={profileForm.size} onChange={(e) => setProfileForm((current) => ({ ...current, size: e.target.value }))} placeholder="Company Size" />
-              </div>
-              <Textarea value={profileForm.description} onChange={(e) => setProfileForm((current) => ({ ...current, description: e.target.value }))} placeholder="Company description" />
-              <div className="flex items-center gap-3">
-                <Button onClick={() => profileMutation.mutate(profileForm)}>{profileMutation.isPending ? 'Saving...' : 'Save Profile Changes'}</Button>
-                {message ? <span className="text-sm text-[var(--brand)]">{message}</span> : null}
+
+              <div className="sticky bottom-0 -mx-1 flex justify-end border-t border-[#e5e7eb] bg-[#f6f8fb]/95 px-1 py-4 backdrop-blur">
+                <Button
+                  onClick={() => profileMutation.mutate(profileForm)}
+                  disabled={profileMutation.isPending}
+                  className="h-11 rounded-[8px] bg-[#ec5b24] px-5 text-[13px] font-semibold shadow-[0_1px_2px_rgba(16,24,40,0.12)] hover:bg-[#dd4f1b]"
+                >
+                  {profileMutation.isPending ? 'Saving...' : 'Save changes'}
+                </Button>
               </div>
             </div>
-          </CardContent></Card>
-        </TabsContent>
-        <TabsContent value="rounds">
-          <Card><CardContent className="space-y-5 pt-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="w-full max-w-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-2)]">Select role</p>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger><SelectValue placeholder="Choose a role to manage rounds" /></SelectTrigger>
-                  <SelectContent>{roles.map((role) => <SelectItem key={role.id} value={role.name}>{role.title}</SelectItem>)}</SelectContent>
-                </Select>
+          </TabsContent>
+
+          <TabsContent value="rounds" className="max-w-[1120px]">
+            <SectionTitle icon={<Users className="h-4 w-4" />} title="Interview rounds" description="Configure the sequence and interviewer for each role." />
+            <div className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                <div className="flex-1">
+                  <Field label="Role">
+                    {roles.length ? (
+                      <Select
+                        value={selectedRole}
+                        onValueChange={(value) => {
+                          setSelectedRole(value)
+                          setTypedRole('')
+                        }}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Choose a role" /></SelectTrigger>
+                        <SelectContent>{roles.map((role) => <SelectItem key={role.id} value={role.name}>{role.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={typedRole}
+                        onChange={(event) => setTypedRole(event.target.value)}
+                        placeholder={rolesLoading ? 'Loading roles...' : 'Type a role name'}
+                        disabled={rolesLoading}
+                      />
+                    )}
+                  </Field>
+                  {rolesError ? <p className="mt-2 text-[12px] text-[#b42318]">Could not load roles. You can still type a role name manually.</p> : null}
+                  {!rolesLoading && !roles.length && !rolesError ? <p className="mt-2 text-[12px] text-[#667085]">No roles found yet. Type the exact role name you use for candidates.</p> : null}
+                </div>
+                <Button
+                  variant="dark"
+                  onClick={() => { setEditingRound(null); setStageModal(true) }}
+                  disabled={!activeRoleName}
+                  className="mt-[28px] h-[42px] rounded-[8px] border border-[#111827] px-4 text-[13px] font-semibold shadow-[0_1px_2px_rgba(16,24,40,0.12)] disabled:border-[#d0d5dd] disabled:bg-[#f2f4f7] disabled:text-[#98a2b3] disabled:opacity-100"
+                >
+                  <Plus className="h-4 w-4" /> Add round
+                </Button>
               </div>
-              <Button onClick={() => { setEditingRound(null); setStageModal(true) }} disabled={!selectedRole}><Plus className="h-4 w-4" /> Add Round</Button>
+
+              <div className="overflow-hidden rounded-[14px] border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                {rounds.map((round) => (
+                    <div key={round.id} className="grid grid-cols-[110px_1fr_auto] items-center gap-4 border-b border-[#edf0f3] px-5 py-4 last:border-b-0">
+                    <span className="text-[13px] font-medium text-[#101828]">Round {round.roundNumber}</span>
+                    <span className="text-[13px] text-[#667085]">{round.interviewerName} - {round.interviewerGmail}</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => { setEditingRound(round); setStageModal(true) }}>Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => roundDeleteMutation.mutate(round.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                ))}
+                {!rounds.length ? <p className="px-4 py-5 text-[13px] text-[#98a2b3]">No rounds configured yet.</p> : null}
+              </div>
             </div>
-            {rounds.map((round) => (
-              <div key={round.id} className="flex items-center justify-between rounded-[14px] border bg-[var(--bg-card)] p-4">
-                <div>
-                  <p className="text-base font-semibold text-[var(--text-1)]">Round {round.roundNumber}</p>
-                  <p className="mt-1 text-sm text-[var(--text-2)]">{round.interviewerName} • {round.interviewerGmail}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => { setEditingRound(round); setStageModal(true) }}>Edit</Button>
-                  <Button variant="ghost" onClick={() => roundDeleteMutation.mutate(round.id)}><Trash2 className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            ))}
-            {!selectedRole ? <p className="text-sm text-[var(--text-2)]">Pick a role from the dropdown to view and manage its interview rounds.</p> : null}
             <StageModal
               open={stageModal}
               onOpenChange={setStageModal}
               round={editingRound}
               nextRoundNumber={nextRoundNumber}
               onSave={(data) => {
-                if (!selectedRole) return
+                if (!activeRoleName) return
                 if (editingRound?.id) {
                   roundUpdateMutation.mutate({ id: editingRound.id, data })
                   return
                 }
-                roundCreateMutation.mutate({ roleName: selectedRole, ...data })
+                roundCreateMutation.mutate({ roleName: activeRoleName, ...data })
               }}
             />
-          </CardContent></Card>
-        </TabsContent>
-        <TabsContent value="invite">
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
-            <Card><CardContent className="space-y-4 pt-6">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-2)]">Role</p>
-                <Select value={inviteForm.roleName} onValueChange={(value) => { setInviteForm((current) => ({ ...current, roleName: value, roundNumber: '' })) }}>
-                  <SelectTrigger><SelectValue placeholder="Select Role" /></SelectTrigger>
-                  <SelectContent>{roles.map((role) => <SelectItem key={role.id} value={role.name}>{role.title}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-2)]">Round</p>
-                <Select value={inviteForm.roundNumber} onValueChange={(value) => setInviteForm((current) => ({ ...current, roundNumber: value }))}>
-                  <SelectTrigger><SelectValue placeholder="Select Round" /></SelectTrigger>
-                  <SelectContent>{inviteRounds.map((round) => <SelectItem key={round.id} value={String(round.roundNumber)}>Round {round.roundNumber}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <Input
-                placeholder="Interviewer Email"
-                value={inviteForm.email || selectedRound?.interviewerGmail || ''}
-                onChange={(e) => setInviteForm((current) => ({ ...current, email: e.target.value }))}
-              />
-              <Button
-                onClick={() => inviteMutation.mutate({ email: inviteForm.email || selectedRound?.interviewerGmail, roleName: inviteForm.roleName, roundNumber: Number(inviteForm.roundNumber) })}
-                disabled={!inviteForm.roleName || !inviteForm.roundNumber || !(inviteForm.email || selectedRound?.interviewerGmail)}
-              >
-                <Mail className="h-4 w-4" /> Send Invite
-              </Button>
-              <p className="text-sm text-[var(--text-2)]">The backend creates the invite link internally. This flow keeps the UI clean and focused on sending, not copying.</p>
-            </CardContent></Card>
-            <Card><CardContent className="pt-6">
-              <p className="mb-4 text-base font-semibold">Previously Sent Invites</p>
-              <div className="grid grid-cols-4 gap-3 border-b pb-3 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--text-2)]">
-                <span>Email</span><span>Role</span><span>Status</span><span>Sent</span>
-              </div>
-              {invites.map((invite) => (
-                <div key={invite.id} className="grid grid-cols-4 gap-3 border-b py-3 text-sm last:border-b-0">
-                  <span className="truncate">{invite.email}</span>
-                  <span>{invite.roleName}</span>
-                  <span className="capitalize">{invite.status}</span>
-                  <span>{new Date(invite.sentAt).toLocaleDateString()}</span>
+          </TabsContent>
+
+          <TabsContent value="invites" className="max-w-[1120px]">
+            <SectionTitle icon={<Mail className="h-4 w-4" />} title="Team invites" description="Invite interviewers and track invitation history." />
+            <div className="space-y-7">
+              <div className="grid gap-5 rounded-[14px] border border-[#e5e7eb] bg-white p-6 shadow-[0_8px_24px_rgba(16,24,40,0.035)] md:grid-cols-3">
+                <Field label="Role">
+                  <Select value={inviteForm.roleName} onValueChange={(value) => setInviteForm((current) => ({ ...current, roleName: value, roundNumber: '' }))}>
+                    <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                    <SelectContent>{roles.map((role) => <SelectItem key={role.id} value={role.name}>{role.title}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Round">
+                  <Select value={inviteForm.roundNumber} onValueChange={(value) => setInviteForm((current) => ({ ...current, roundNumber: value }))}>
+                    <SelectTrigger><SelectValue placeholder="Select round" /></SelectTrigger>
+                    <SelectContent>{inviteRounds.map((round) => <SelectItem key={round.id} value={String(round.roundNumber)}>Round {round.roundNumber}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Email">
+                  <Input value={inviteForm.email || selectedRound?.interviewerGmail || ''} onChange={(event) => setInviteForm((current) => ({ ...current, email: event.target.value }))} placeholder="interviewer@company.com" />
+                </Field>
+                <div className="md:col-span-3">
+                  <Button
+                    onClick={() => inviteMutation.mutate({ email: inviteForm.email || selectedRound?.interviewerGmail, roleName: inviteForm.roleName, roundNumber: Number(inviteForm.roundNumber) })}
+                    disabled={!inviteForm.roleName || !inviteForm.roundNumber || !(inviteForm.email || selectedRound?.interviewerGmail)}
+                  >
+                    <Mail className="h-4 w-4" /> Send invite
+                  </Button>
                 </div>
-              ))}
-            </CardContent></Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="integrations">
-          <div className="space-y-6">
-            <Card><CardContent className="space-y-4 pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-semibold">Google Drive</p>
-                  <p className="mt-1 text-sm text-[var(--text-2)]">Connect the Resume-ATS folder used for imported resumes and manual uploads.</p>
+              </div>
+
+              <div className="overflow-hidden rounded-[14px] border border-[#e5e7eb] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                <div className="grid grid-cols-[1.4fr_1fr_0.8fr_0.8fr] bg-[#f7f8fa] px-5 py-3 text-[12px] font-medium text-[#667085]">
+                  <span>Email</span><span>Role</span><span>Status</span><span>Sent</span>
                 </div>
-                {driveConfig?.driveFolderLink ? <span className="rounded-full bg-[var(--success-light)] px-3 py-1 text-xs text-[var(--success)]">Connected</span> : null}
+                {invites.map((invite) => (
+                  <div key={invite.id} className="grid grid-cols-[1.4fr_1fr_0.8fr_0.8fr] border-t border-[#edf0f3] px-5 py-4 text-[13px]">
+                    <span>{invite.email}</span>
+                    <span>{invite.roleName}</span>
+                    <span>{invite.status}</span>
+                    <span>{new Date(invite.sentAt).toLocaleDateString()}</span>
+                  </div>
+                ))}
+                {!invites.length ? <p className="border-t border-[#edf0f3] px-4 py-5 text-[13px] text-[#98a2b3]">No invites sent yet.</p> : null}
               </div>
-              <Input placeholder="Drive folder link" value={integrationForm.driveFolderLink || driveConfig?.driveFolderLink || ''} onChange={(e) => setIntegrationForm((current) => ({ ...current, driveFolderLink: e.target.value }))} />
-              <div className="flex gap-3">
-                <Button onClick={() => driveSaveMutation.mutate({ driveFolderLink: integrationForm.driveFolderLink || driveConfig?.driveFolderLink || '' })}>Save</Button>
-                <Button variant="secondary" onClick={() => syncMutation.mutate()}><FolderSync className="h-4 w-4" /> Sync Now</Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="integrations" className="max-w-[1120px]">
+            <SectionTitle icon={<FolderSync className="h-4 w-4" />} title="Integrations" description="Connect resume import and notification services." />
+            <div className="space-y-7">
+              <div className="rounded-[14px] border border-[#e5e7eb] bg-white p-6 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                <SectionTitle icon={<FolderSync className="h-4 w-4" />} title="Google Drive" description="Connect the folder used for resume import and syncing." />
+                <div className="space-y-4">
+                  <Input placeholder="Drive folder link" value={integrationForm.driveFolderLink || driveConfig?.driveFolderLink || ''} onChange={(event) => setIntegrationForm((current) => ({ ...current, driveFolderLink: event.target.value }))} />
+                  <div className="flex gap-3">
+                    <Button onClick={() => driveSaveMutation.mutate({ driveFolderLink: integrationForm.driveFolderLink || driveConfig?.driveFolderLink || '' })}>Save</Button>
+                    <Button variant="secondary" onClick={() => syncMutation.mutate()}><FolderSync className="h-4 w-4" /> Sync now</Button>
+                  </div>
+                  {syncStatus?.isSyncRunning ? <p className="text-[13px] text-[#667085]">Sync running. Processed {syncStatus.processed ?? 0} candidates so far.</p> : null}
+                </div>
               </div>
-              {syncStatus?.isSyncRunning ? <div className="space-y-2"><div className="h-2 rounded-full bg-[var(--bg-hover)]"><div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${((syncStatus.processed ?? 0) / Math.max(syncStatus.total ?? 1, 1)) * 100}%` }} /></div><p className="text-sm text-[var(--text-2)]">Sync running. Processed {syncStatus.processed ?? 0} candidates so far.</p></div> : null}
-            </CardContent></Card>
-            <Card><CardContent className="space-y-4 pt-6">
-              <p className="text-base font-semibold">Slack</p>
-              <Input placeholder="Webhook URL" value={integrationForm.slackWebhookUrl} onChange={(e) => setIntegrationForm((current) => ({ ...current, slackWebhookUrl: e.target.value }))} />
-              <Input placeholder="#channel-name" value={integrationForm.slackChannel} onChange={(e) => setIntegrationForm((current) => ({ ...current, slackChannel: e.target.value }))} />
-              <div className="flex gap-3"><Button variant="secondary">Test</Button><Button>Save</Button></div>
-            </CardContent></Card>
-          </div>
-        </TabsContent>
+              <div className="rounded-[14px] border border-[#e5e7eb] bg-white p-6 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
+                <SectionTitle icon={<Link2 className="h-4 w-4" />} title="Slack" description="Send candidate and interview updates to your hiring channel." />
+                <div className="grid gap-4">
+                  <Input placeholder="Webhook URL" value={integrationForm.slackWebhookUrl} onChange={(event) => setIntegrationForm((current) => ({ ...current, slackWebhookUrl: event.target.value }))} />
+                  <Button className="w-fit" onClick={() => profileMutation.mutate({ slackWebhookUrl: integrationForm.slackWebhookUrl })}>Save</Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   )

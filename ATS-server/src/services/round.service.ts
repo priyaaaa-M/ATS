@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../db'
-import { interviewRounds, users } from '../db/schema'
+import { interviewRounds, roles, users } from '../db/schema'
 import { AppError } from '../types'
 
 const roundSchema = z.object({
@@ -23,6 +23,21 @@ export const roundService = {
     const owner = await db.query.users.findFirst({
       where: eq(users.id, userId),
     })
+
+    const existingRole = await db.query.roles.findFirst({
+      where: and(eq(roles.userId, userId), eq(roles.name, payload.roleName)),
+    })
+
+    if (!existingRole) {
+      await db
+        .insert(roles)
+        .values({
+          userId,
+          companyId: owner?.companyId || null,
+          name: payload.roleName,
+        })
+        .onConflictDoNothing()
+    }
 
     const [round] = await db
       .insert(interviewRounds)

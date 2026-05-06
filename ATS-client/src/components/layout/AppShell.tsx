@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useCompanyBrand } from '../../hooks/useCompanyBrand'
 import { useThemeMode } from '../../hooks/useThemeMode'
@@ -9,6 +10,7 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 
 export function AppShell() {
+  const { pathname } = useLocation()
   useCompanyBrand()
   useThemeMode()
   const { data: candidates = [] } = useCandidates({})
@@ -17,6 +19,7 @@ export function AppShell() {
   const sidebarWidth = useLayoutStore((state) => state.sidebarWidth)
   const setSidebarWidth = useLayoutStore((state) => state.setSidebarWidth)
   const [resizing, setResizing] = useState(false)
+  const isSettings = pathname === '/settings'
 
   useEffect(() => {
     if (!resizing) return
@@ -31,7 +34,7 @@ export function AppShell() {
   }, [resizing, setSidebarWidth])
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-white">
       <Sidebar candidateCount={candidates.length} openRoles={openRoles} />
       <button
         type="button"
@@ -42,7 +45,7 @@ export function AppShell() {
       />
       <div className="min-w-0 flex-1">
         <TopBar />
-        <main className="p-6">
+        <main className={isSettings ? 'bg-[#f6f8fb]' : 'bg-[#f6f8fb] p-6'}>
           <Outlet />
         </main>
       </div>
