@@ -3,6 +3,7 @@ import { config } from '../config'
 import { db } from '../db'
 import { driveConfigs, syncStates, users } from '../db/schema'
 import { AppError } from '../types'
+import { activityService } from './activity.service'
 import { candidateService } from './candidate.service'
 import { driveService } from './drive.service'
 import { parserService } from './parser.service'
@@ -36,9 +37,6 @@ async function updateSyncState(
 
 async function processSingleResume(userId: string, file: SyncFile, roleName: string) {
   const existing = await candidateService.getByDriveFileId(userId, file.fileId)
-  if (existing) {
-    return
-  }
 
   if (file.mimeType !== 'application/pdf') {
     throw new AppError(`Unsupported file type for parsing: ${file.mimeType}`, 400)
@@ -50,7 +48,7 @@ async function processSingleResume(userId: string, file: SyncFile, roleName: str
     where: eq(users.id, userId),
   })
 
-  const candidate = await candidateService.create({
+  const payload = {
     userId,
     companyId: owner?.companyId || null,
     role: roleName,
@@ -61,13 +59,36 @@ async function processSingleResume(userId: string, file: SyncFile, roleName: str
     driveFileId: file.fileId,
     parsedData: parsed.sections,
     atsScore: parsed.atsScore,
-  })
+  }
+
+  if (existing) {
+    await candidateService.updateFromDrive(existing.id, {
+      name: parsed.name || undefined,
+      candidateEmail: parsed.email || undefined,
+      phone: parsed.phone || undefined,
+      resumeUrl: file.webViewLink,
+      parsedData: parsed.sections,
+      atsScore: parsed.atsScore,
+    })
+    return
+  }
+
+  const candidate = await candidateService.create(payload)
 
   await slackService.notifyNewCandidate(
     userId,
     candidate.name || file.name,
     roleName
   )
+
+  await activityService.logActivity({
+    userId,
+    type: 'resume_parsed',
+    message: `System parsed ${candidate.name || file.name}'s resume from Drive`,
+    candidateId: candidate.id,
+    actorName: 'System',
+    actorInitials: 'SY',
+  })
 }
 
 export const syncService = {
@@ -111,9 +132,11 @@ export const syncService = {
 
       let totalProcessed = 0
       let totalFailed = 0
+      const seenDriveFileIds: string[] = []
 
       for (const roleFolder of roleFolders) {
         const files = await driveService.getFilesInFolder(userId, roleFolder.folderId)
+        seenDriveFileIds.push(...files.map((file) => file.fileId))
 
         for (let index = 0; index < files.length; index += config.sync.batchSize) {
           const batch = files.slice(index, index + config.sync.batchSize)
@@ -140,6 +163,17 @@ export const syncService = {
             setTimeout(resolve, config.sync.batchDelayMs)
           )
         }
+      }
+
+      const removedCount = await candidateService.deleteDriveCandidatesExcept(
+        userId,
+        seenDriveFileIds
+      )
+
+      if (removedCount > 0) {
+        console.log(
+          `[SYNC] Removed ${removedCount} stale candidate(s) for user ${userId}`
+        )
       }
 
       await updateSyncState(userId, {

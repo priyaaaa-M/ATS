@@ -2,6 +2,7 @@ import {
   boolean,
   integer,
   jsonb,
+  json,
   pgTable,
   text,
   timestamp,
@@ -15,6 +16,8 @@ export const companies = pgTable('companies', {
   logoUrl: text('logo_url'),
   brandColor: text('brand_color').default('#6366F1'),
   slackWebhookUrl: text('slack_webhook_url'),
+  slackChannel: text('slack_channel'),
+  slackNotifyEvents: json('slack_notify_events').$type<string[]>(),
   industry: text('industry'),
   size: text('size'),
   description: text('description'),
@@ -81,6 +84,10 @@ export const roles = pgTable(
     companyId: uuid('company_id').references(() => companies.id),
     userId: uuid('user_id').references(() => users.id),
     name: text('name').notNull(),
+    hiringManagerId: uuid('hiring_manager_id').references(() => users.id),
+    screeningQuestions: jsonb('screening_questions').$type<
+      Array<{ id?: string; question: string; type?: 'yes_no' | 'scale'; required?: boolean }>
+    >(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -101,6 +108,7 @@ export const interviewRounds = pgTable(
     roundNumber: integer('round_number').notNull(),
     interviewerName: text('interviewer_name').notNull(),
     interviewerGmail: text('interviewer_gmail').notNull(),
+    duration: text('duration'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -193,6 +201,9 @@ export const interviewFeedback = pgTable(
     weaknesses: text('weaknesses'),
     notes: text('notes'),
     recommendation: text('recommendation'),
+    scorecardCriteria: jsonb('scorecard_criteria').$type<
+      Array<{ questionId: string; value: 'yes' | 'no' | 'unknown' }>
+    >(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

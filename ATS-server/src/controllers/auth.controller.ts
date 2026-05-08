@@ -74,6 +74,7 @@ export const authController = {
       )
 
       if (!req.session?.userId) {
+        res.clearCookie(config.cookieName)
         return res.status(200).json({ authenticated: false })
       }
 

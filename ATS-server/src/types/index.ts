@@ -46,6 +46,7 @@ export interface ParsedResumeResult {
 export interface CandidateFilters {
   role?: string
   status?: string
+  inboxStatus?: string
   search?: string
   minAtsScore?: number
   round?: number

@@ -2,6 +2,15 @@ import type { NextFunction, Request, Response } from 'express'
 import { roundService } from '../services/round.service'
 
 export const roundsController = {
+  listAll: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const rounds = await roundService.listAll(req.session.userId!)
+      return res.json(rounds)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
   listByRole: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const rounds = await roundService.listByRole(

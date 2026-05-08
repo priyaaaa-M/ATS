@@ -4,7 +4,7 @@ import { candidateService } from '../services/candidate.service'
 export const candidatesController = {
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { role, status, search, min_ats_score, round } = req.query
+      const { role, status, search, min_ats_score, round, inboxStatus } = req.query
       const candidates = await candidateService.list({
         userId: req.session.userId!,
         userRole: req.session.userRole as 'hr' | 'interviewer',
@@ -12,6 +12,7 @@ export const candidatesController = {
         filters: {
           role: role as string | undefined,
           status: status as string | undefined,
+          inboxStatus: inboxStatus as string | undefined,
           search: search as string | undefined,
           minAtsScore: min_ats_score
             ? Number.parseInt(min_ats_score as string, 10)
@@ -21,6 +22,42 @@ export const candidatesController = {
       })
 
       return res.json(candidates)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  counts: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getCounts({
+        userId: req.session.userId!,
+        userRole: req.session.userRole as 'hr' | 'interviewer',
+        userEmail: req.session.userEmail!,
+      })
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  pipeline: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getPipelineCandidates(
+        req.session.userId!,
+        typeof req.query.role === 'string' ? req.query.role : undefined
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  approvedByInterviewer: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getApprovedByInterviewer(
+        req.session.userEmail!
+      )
+      return res.json(result)
     } catch (err) {
       return next(err)
     }
@@ -50,6 +87,34 @@ export const candidatesController = {
       const result = await candidateService.approve(
         req.params.id,
         req.session.userId!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  action: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.action(req.params.id, {
+        userId: req.session.userId!,
+        userRole: req.session.userRole as 'hr' | 'interviewer',
+        userEmail: req.session.userEmail!,
+        action: req.body?.action,
+        reason: req.body?.reason,
+      })
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  moveStage: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.moveToStage(
+        req.params.id,
+        req.session.userId!,
+        req.body?.stageId
       )
       return res.json(result)
     } catch (err) {
@@ -87,6 +152,78 @@ export const candidatesController = {
         req.session.userEmail!
       )
       return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  getActivity: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getActivity(
+        req.params.id,
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  getNotes: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getNotes(
+        req.params.id,
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  addNote: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.addNote(req.params.id, {
+        userId: req.session.userId!,
+        userRole: req.session.userRole as 'hr' | 'interviewer',
+        userEmail: req.session.userEmail!,
+        text: req.body?.text,
+        isPrivate: req.body?.isPrivate,
+      })
+      return res.status(201).json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  getScorecard: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.getScorecard(
+        req.params.id,
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  saveScorecard: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.saveScorecard(req.params.id, {
+        userId: req.session.userId!,
+        userRole: req.session.userRole as 'hr' | 'interviewer',
+        userEmail: req.session.userEmail!,
+        criteria: req.body?.criteria,
+        overallFit: req.body?.overallFit,
+      })
+      return res.status(201).json(result)
     } catch (err) {
       return next(err)
     }

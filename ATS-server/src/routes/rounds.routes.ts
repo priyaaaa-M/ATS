@@ -7,6 +7,7 @@ const router = Router()
 
 router.use(authMiddleware)
 router.use(requireRole('hr'))
+router.get('/all', roundsController.listAll)
 router.get('/:roleName', roundsController.listByRole)
 router.post('/', roundsController.create)
 router.put('/:id', roundsController.update)

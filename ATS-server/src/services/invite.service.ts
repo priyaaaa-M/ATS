@@ -1,10 +1,11 @@
 import crypto from 'crypto'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import { config } from '../config'
 import { db } from '../db'
 import { invites } from '../db/schema'
 import { AppError } from '../types'
+import { mailService } from './mail.service'
 
 const generateInviteSchema = z.object({
   email: z.string().email(),
@@ -17,6 +18,37 @@ const generateInviteSchema = z.object({
 export const inviteService = {
   generate: async (input: unknown) => {
     const payload = generateInviteSchema.parse(input)
+    // Check for existing active invite for same email/role/round
+    const existing = await db.query.invites.findFirst({
+      where: and(
+        eq(invites.email, payload.email.toLowerCase()),
+        eq(invites.roleName, payload.roleName),
+        eq(invites.roundNumber, payload.roundNumber),
+        eq(invites.used, false),
+        gt(invites.expiresAt, new Date())
+      ),
+    })
+
+    if (existing) {
+      // Resend existing invite instead of creating a duplicate
+      const inviteLink = `${config.appBaseUrl}/invite/${existing.token}`
+      await mailService.sendInviteEmail({
+        createdByUserId: payload.createdByUserId,
+        toEmail: existing.email,
+        roleName: existing.roleName,
+        roundNumber: existing.roundNumber,
+        inviteLink,
+        companyId: existing.companyId || payload.companyId,
+        expiresInDays: Math.ceil((existing.expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)),
+      })
+
+      return {
+        message: 'Existing invite resent',
+        invite: existing,
+        inviteLink,
+      }
+    }
+
     const token = crypto.randomUUID()
     const expiresAt = new Date(
       Date.now() + config.invite.expiryDays * 24 * 60 * 60 * 1000
@@ -32,9 +64,21 @@ export const inviteService = {
       })
       .returning()
 
+    const inviteLink = `${config.appBaseUrl}/invite/${token}`
+
+    await mailService.sendInviteEmail({
+      createdByUserId: payload.createdByUserId,
+      toEmail: invite.email,
+      roleName: payload.roleName,
+      roundNumber: payload.roundNumber,
+      inviteLink,
+      companyId: payload.companyId,
+      expiresInDays: config.invite.expiryDays,
+    })
+
     return {
       invite,
-      inviteLink: `${config.appBaseUrl}/invite/${token}`,
+      inviteLink,
       token,
       expiresAt,
     }

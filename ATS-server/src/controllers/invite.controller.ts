@@ -26,7 +26,7 @@ export const inviteController = {
 
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const invites = await inviteService.listByCompany(req.session.companyId)
+      const invites = await inviteService.listByCompany(req.session.companyId!)
       return res.json(invites)
     } catch (err) {
       return next(err)

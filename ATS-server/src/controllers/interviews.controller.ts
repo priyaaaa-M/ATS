@@ -15,6 +15,33 @@ export const interviewsController = {
     }
   },
 
+  byWeek: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await interviewService.getByWeek(
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!,
+        String(req.query.weekStart || '')
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  mine: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await interviewService.getMine(
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
   book: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await interviewService.bookInterview({
@@ -56,6 +83,20 @@ export const interviewsController = {
     try {
       const result = await interviewService.getByCandidateId(
         req.params.candidateId,
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  sendReminder: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await interviewService.sendReminder(
+        req.params.id,
         req.session.userId!,
         req.session.userRole as 'hr' | 'interviewer',
         req.session.userEmail!

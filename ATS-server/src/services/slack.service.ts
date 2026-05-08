@@ -1,12 +1,17 @@
 import { config } from '../config'
+import { db } from '../db'
+import { companies } from '../db/schema'
+import { AppError } from '../types'
+import { eq } from 'drizzle-orm'
 
-async function sendMessage(blocks: unknown[], text: string) {
-  if (!config.slack.webhookUrl) {
+async function sendMessage(blocks: unknown[], text: string, webhookUrl?: string) {
+  const resolvedWebhook = webhookUrl || config.slack.webhookUrl
+  if (!resolvedWebhook) {
     console.log('[SLACK] No webhook configured, skipping')
     return
   }
 
-  await fetch(config.slack.webhookUrl, {
+  await fetch(resolvedWebhook, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, blocks }),
@@ -14,6 +19,20 @@ async function sendMessage(blocks: unknown[], text: string) {
 }
 
 export const slackService = {
+  sendGenericMessage: async (text: string) =>
+    sendMessage(
+      [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text,
+          },
+        },
+      ],
+      text
+    ),
+
   notifyNewCandidate: async (
     _userId: string,
     candidateName: string,
@@ -64,4 +83,29 @@ export const slackService = {
       ],
       `${candidateName} selected for ${role}`
     ),
+
+  sendTestMessage: async (companyId: string) => {
+    const company = await db.query.companies.findFirst({
+      where: eq(companies.id, companyId),
+    })
+
+    const webhookUrl = company?.slackWebhookUrl || config.slack.webhookUrl
+    if (!webhookUrl) {
+      throw new AppError('Slack webhook is not configured', 400)
+    }
+
+    await sendMessage(
+      [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '✅ Slack integration is working! Your ATS will now send notifications here.',
+          },
+        },
+      ],
+      '✅ Slack integration is working! Your ATS will now send notifications here.',
+      webhookUrl
+    )
+  },
 }

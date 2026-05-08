@@ -1,10 +1,12 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, gte, lt } from 'drizzle-orm'
 import { DateTime } from 'luxon'
 import { z } from 'zod'
 import { db } from '../db'
 import { candidates, scheduledInterviews } from '../db/schema'
 import { AppError } from '../types'
+import { activityService } from './activity.service'
 import { calendarService } from './calendar.service'
+import { slackService } from './slack.service'
 
 const bookInterviewSchema = z.object({
   candidateId: z.string().uuid(),
@@ -60,6 +62,30 @@ export const interviewService = {
 
     return interviews
   },
+
+  getByWeek: async (
+    userId: string,
+    userRole: 'hr' | 'interviewer',
+    userEmail: string,
+    weekStart: string
+  ) => {
+    const start = new Date(`${weekStart}T00:00:00.000Z`)
+    const end = new Date(start)
+    end.setUTCDate(end.getUTCDate() + 7)
+
+    const interviews = await interviewService.list(userId, userRole, userEmail)
+    return interviews.filter((item) => {
+      if (!item.scheduledStartTime) return false
+      const when = new Date(item.scheduledStartTime)
+      return when >= start && when < end
+    })
+  },
+
+  getMine: async (
+    userId: string,
+    userRole: 'hr' | 'interviewer',
+    userEmail: string
+  ) => interviewService.list(userId, userRole, userEmail),
 
   bookInterview: async (input: unknown) => {
     const payload = bookInterviewSchema.parse(input)
@@ -147,6 +173,15 @@ export const interviewService = {
         updatedAt: new Date(),
       })
       .where(eq(candidates.id, payload.candidateId))
+
+    await activityService.logActivity({
+      userId: candidate.userId,
+      type: 'interview_scheduled',
+      message: `${payload.interviewerEmail} scheduled interview with ${candidate.name || candidate.candidateEmail || 'candidate'}`,
+      candidateId: candidate.id,
+      actorName: payload.interviewerEmail,
+      actorInitials: payload.interviewerEmail.slice(0, 2).toUpperCase(),
+    })
 
     return {
       success: true,
@@ -276,5 +311,42 @@ export const interviewService = {
       .from(scheduledInterviews)
       .where(eq(scheduledInterviews.candidateId, candidateId))
       .orderBy(desc(scheduledInterviews.scheduledStartTime))
+  },
+
+  sendReminder: async (
+    id: string,
+    userId: string,
+    userRole: 'hr' | 'interviewer',
+    userEmail: string
+  ) => {
+    const interview = await db.query.scheduledInterviews.findFirst({
+      where: eq(scheduledInterviews.id, id),
+    })
+
+    if (!interview) {
+      throw new AppError('Interview not found', 404)
+    }
+
+    const candidate = await db.query.candidates.findFirst({
+      where: eq(candidates.id, interview.candidateId),
+    })
+
+    if (!candidate) {
+      throw new AppError('Candidate not found', 404)
+    }
+
+    if (userRole === 'hr' && candidate.userId !== userId) {
+      throw new AppError('Forbidden', 403)
+    }
+
+    if (userRole === 'interviewer' && interview.interviewerEmail !== userEmail) {
+      throw new AppError('Forbidden', 403)
+    }
+
+    await slackService.sendGenericMessage(
+      `Reminder: ${candidate.name || candidate.candidateEmail || 'Candidate'} still needs interview action for round ${interview.roundNumber}.`
+    )
+
+    return { success: true }
   },
 }

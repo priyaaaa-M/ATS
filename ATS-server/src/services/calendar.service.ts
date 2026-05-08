@@ -151,6 +151,12 @@ export const calendarService = {
     )
 
     return {
+      busy: busyBlocks.map((block) => ({
+        start: block.start,
+        end: block.end,
+        title: block.summary,
+      })),
+      free: freeSlots,
       busyBlocks,
       freeSlots,
       timezone,

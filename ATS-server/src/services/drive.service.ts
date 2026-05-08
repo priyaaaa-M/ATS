@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { google } from 'googleapis'
 import { db } from '../db'
-import { driveConfigs, roles, users } from '../db/schema'
+import { driveConfigs, interviewRounds, roles, users } from '../db/schema'
 import { AppError } from '../types'
 import { createOAuth2Client } from './google.service'
 
@@ -79,16 +79,44 @@ export const driveService = {
         folderId: folder.id || '',
       })) || []
 
-    for (const roleFolder of result) {
-      await db
-        .insert(roles)
-        .values({
-          companyId: user?.companyId || null,
-          userId,
-          name: roleFolder.name,
-        })
-        .onConflictDoNothing()
-    }
+    const roleNames = result.map((roleFolder) => roleFolder.name)
+    const existingRoles = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.userId, userId))
+
+    const staleRoleNames = existingRoles
+      .map((role) => role.name)
+      .filter((roleName) => !roleNames.includes(roleName))
+
+    await db.transaction(async (tx) => {
+      if (staleRoleNames.length > 0) {
+        await tx
+          .delete(interviewRounds)
+          .where(
+            and(
+              eq(interviewRounds.userId, userId),
+              inArray(interviewRounds.roleName, staleRoleNames)
+            )
+          )
+        await tx
+          .delete(roles)
+          .where(
+            and(eq(roles.userId, userId), inArray(roles.name, staleRoleNames))
+          )
+      }
+
+      for (const roleFolder of result) {
+        await tx
+          .insert(roles)
+          .values({
+            companyId: user?.companyId || null,
+            userId,
+            name: roleFolder.name,
+          })
+          .onConflictDoNothing()
+      }
+    })
 
     return result
   },

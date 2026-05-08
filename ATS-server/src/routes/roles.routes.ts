@@ -8,6 +8,8 @@ const router = Router()
 router.use(authMiddleware)
 router.use(requireRole('hr'))
 router.get('/', rolesController.list)
+router.get('/:roleName/screening-questions', rolesController.getScreeningQuestions)
+router.put('/:roleName/screening-questions', rolesController.updateScreeningQuestions)
 router.post('/sync-from-drive', rolesController.syncFromDrive)
 
 export { router as rolesRoutes }

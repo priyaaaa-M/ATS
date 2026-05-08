@@ -1,8 +1,84 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../db'
 import { companies, invites, users } from '../db/schema'
 import { AppError } from '../types'
 import { googleService } from './google.service'
+
+let companySchemaCache: {
+  hasSlackChannel: boolean
+  hasSlackNotifyEvents: boolean
+} | null = null
+
+async function getCompanySchemaFlags() {
+  if (companySchemaCache) return companySchemaCache
+
+  const result = await db.execute(sql`
+    select column_name
+    from information_schema.columns
+    where table_schema = 'public' and table_name = 'companies'
+  `)
+
+  const columnNames = new Set(
+    (result as unknown as Array<{ column_name: string }>).map(
+      (row) => row.column_name
+    )
+  )
+
+  companySchemaCache = {
+    hasSlackChannel: columnNames.has('slack_channel'),
+    hasSlackNotifyEvents: columnNames.has('slack_notify_events'),
+  }
+
+  return companySchemaCache
+}
+
+async function getCompanyByIdCompat(companyId: string) {
+  const schemaFlags = await getCompanySchemaFlags()
+
+  const companyQuery = schemaFlags.hasSlackChannel && schemaFlags.hasSlackNotifyEvents
+    ? sql`
+        select
+          id,
+          name,
+          logo_url as "logoUrl",
+          brand_color as "brandColor",
+          slack_webhook_url as "slackWebhookUrl",
+          slack_channel as "slackChannel",
+          slack_notify_events as "slackNotifyEvents",
+          industry,
+          size,
+          description,
+          website,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        from companies
+        where id = ${companyId}
+        limit 1
+      `
+    : sql`
+        select
+          id,
+          name,
+          logo_url as "logoUrl",
+          brand_color as "brandColor",
+          slack_webhook_url as "slackWebhookUrl",
+          null::text as "slackChannel",
+          null::json as "slackNotifyEvents",
+          industry,
+          size,
+          description,
+          website,
+          created_at as "createdAt",
+          updated_at as "updatedAt"
+        from companies
+        where id = ${companyId}
+        limit 1
+      `
+
+  const result = await db.execute(companyQuery)
+  const rows = result as unknown as Array<Record<string, unknown>>
+  return rows[0] ?? null
+}
 
 function deriveCompanyName(email: string) {
   const domain = email.split('@')[1] || 'company'
@@ -13,13 +89,27 @@ function deriveCompanyName(email: string) {
 export const authService = {
   handleGoogleCallback: async (code: string, inviteToken?: string) => {
     const googleUser = await googleService.exchangeCode(code)
+    const googleUserEmail = googleUser.email?.toLowerCase()
 
-    if (!googleUser.email) {
+    if (!googleUserEmail) {
       throw new AppError('Google account email not available', 400)
     }
 
+    const invite =
+      inviteToken &&
+      (await db.query.invites.findFirst({
+        where: and(eq(invites.token, inviteToken), eq(invites.used, false)),
+      }))
+
+    if (invite && invite.email.toLowerCase() !== googleUserEmail) {
+      throw new AppError(
+        `Invite was for ${invite.email} but you logged in as ${googleUserEmail}. Please use the correct Google account.`,
+        400
+      )
+    }
+
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, googleUser.email.toLowerCase()),
+      where: eq(users.email, googleUserEmail),
     })
 
     if (existingUser) {
@@ -39,15 +129,9 @@ export const authService = {
       return { user: updatedUser }
     }
 
-    const invite =
-      inviteToken &&
-      (await db.query.invites.findFirst({
-        where: and(eq(invites.token, inviteToken), eq(invites.used, false)),
-      }))
-
     if (
       invite &&
-      invite.email.toLowerCase() === googleUser.email.toLowerCase() &&
+      invite.email.toLowerCase() === googleUserEmail &&
       invite.expiresAt > new Date()
     ) {
       const [newInterviewer] = await db
@@ -55,7 +139,7 @@ export const authService = {
         .values({
           companyId: invite.companyId || null,
           name: googleUser.name,
-          email: googleUser.email.toLowerCase(),
+          email: googleUserEmail,
           role: 'interviewer',
           googleAccessToken: googleUser.accessToken,
           googleRefreshToken: googleUser.refreshToken,
@@ -84,7 +168,7 @@ export const authService = {
       .values({
         companyId: company.id,
         name: googleUser.name,
-        email: googleUser.email.toLowerCase(),
+        email: googleUserEmail,
         role: 'hr',
         googleAccessToken: googleUser.accessToken,
         googleRefreshToken: googleUser.refreshToken,
@@ -104,11 +188,7 @@ export const authService = {
       throw new AppError('User not found', 404)
     }
 
-    const company = user.companyId
-      ? await db.query.companies.findFirst({
-          where: eq(companies.id, user.companyId),
-        })
-      : null
+    const company = user.companyId ? await getCompanyByIdCompat(user.companyId) : null
 
     return {
       ...user,
