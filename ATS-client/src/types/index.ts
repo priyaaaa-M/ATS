@@ -14,6 +14,7 @@ export interface Company {
   driveFolderLink?: string | null
   slackWebhookUrl?: string | null
   slackChannel?: string | null
+  slackNotifyEvents?: string[] | null
   lastSyncAt?: string | null
 }
 
@@ -36,16 +37,22 @@ export interface CandidateNote {
   id: string
   text: string
   createdAt: string
-  createdByName: string
+  authorName?: string
+  createdByName?: string
   createdById?: string
+  isPrivate?: boolean
 }
 
 export interface CandidateActivity {
   id: string
-  type: 'approval' | 'system' | 'note' | 'status'
-  text: string
-  createdAt: string
+  type: 'status_change' | 'note_added' | 'interview_scheduled' | 'feedback_submitted' | 'system'
+  text?: string
+  message?: string
+  createdAt?: string
+  timestamp: string
   actorName?: string
+  actorInitials?: string
+  color?: string
 }
 
 export interface MatchBreakdownItem {
@@ -76,6 +83,7 @@ export interface ParsedData {
   experience?: ParsedExperience[]
   education?: ParsedEducation[]
   skills?: Array<{ name: string; category?: string }>
+  screeningAnswers?: Array<{ question?: string; answer?: string }>
   socials?: {
     linkedin?: string
     github?: string
@@ -87,6 +95,7 @@ export interface ParsedData {
   visaRequired?: boolean
   relocationReady?: boolean
   salaryExpectation?: string
+  salary?: string
 }
 
 export interface Candidate {
@@ -100,9 +109,12 @@ export interface Candidate {
   totalRounds?: number | null
   assignedInterviewerEmail?: string | null
   roundStatus?: string | null
+  meetLink?: string | null
   atsScore?: number | null
   inboxStatus: InboxStatus
   currentStage?: string | null
+  currentStageId?: string | null
+  linkedinUrl?: string | null
   parsedData?: ParsedData | null
   notes?: CandidateNote[]
   stageHistory?: CandidateActivity[]
@@ -132,6 +144,7 @@ export interface InterviewRound {
   roundNumber: number
   interviewerName: string
   interviewerGmail: string
+  duration?: string | null
   createdAt?: string
   updatedAt?: string | null
 }
@@ -152,6 +165,13 @@ export interface Role {
   hiringManagerName?: string | null
   candidateCount?: number
   averageAtsScore?: number
+  roundCount?: number
+  pipelineCounts?: {
+    submitted: number
+    inProcess: number
+    hired: number
+    rejected: number
+  }
 }
 
 export interface Interview {
@@ -159,15 +179,40 @@ export interface Interview {
   candidateId: string
   candidateName: string
   role: string
+  roleName?: string
   roundNumber?: number
   stageName?: string
   interviewerEmail?: string
   interviewerName?: string
   scheduledAt?: string | null
   endAt?: string | null
-  status: 'pending' | 'scheduled' | 'completed'
+  scheduledStartTime?: string | null
+  scheduledEndTime?: string | null
+  bookedAt?: string | null
+  durationMinutes?: number | null
+  feedbackSubmitted?: boolean
+  status: 'pending' | 'scheduled' | 'completed' | 'pending_slot' | 'cancelled' | 'rescheduled'
   meetLink?: string | null
   hasFeedback?: boolean
+}
+
+export interface Scorecard {
+  id?: string
+  criteria?: Array<{ questionId: string; value: 'yes' | 'no' | 'unknown' }>
+  overallFit?: string
+}
+
+export interface NotificationActivity {
+  id: string
+  type: string
+  message: string
+  isRead?: boolean
+  metadata?: {
+    candidateId?: string
+    actorName?: string
+    actorInitials?: string
+  } | null
+  createdAt: string
 }
 
 export interface Invite {
@@ -175,10 +220,10 @@ export interface Invite {
   email: string
   roleName: string
   roundNumber: number
-  status: 'accepted' | 'pending' | 'expired'
-  sentAt: string
+  used: boolean
+  expiresAt: string
+  createdAt: string
   token?: string
-  company?: Company
 }
 
 export interface Feedback {
@@ -215,9 +260,10 @@ export interface FreeSlotsResponse {
 
 export interface SyncStatus {
   isSyncRunning: boolean
-  processed?: number
-  total?: number
-  imported?: number
-  startedAt?: string
+  lastSyncStartedAt?: string | null
+  lastSyncCompletedAt?: string | null
+  lastSyncError?: string | null
+  totalProcessed?: number | null
+  totalFailed?: number | null
   updatedAt?: string
 }

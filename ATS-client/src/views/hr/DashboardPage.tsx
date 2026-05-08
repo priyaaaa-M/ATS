@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Activity, CalendarClock, Inbox, Trophy } from 'lucide-react'
-import { interviewsApi } from '../../api'
+import { dashboardApi, interviewsApi } from '../../api'
 import { Avatar } from '../../components/shared/Avatar'
 import { Card, CardContent } from '../../components/ui/card'
 import { EmptyState } from '../../components/shared/EmptyState'
@@ -12,6 +12,11 @@ import { timeAgo, formatDateTime } from '../../lib/utils'
 export function DashboardPage() {
   const { data: candidates = [] } = useCandidates({})
   const { data: interviews = [] } = useQuery({ queryKey: ['interviews'], queryFn: interviewsApi.list, staleTime: 30_000 })
+  const { data: activities = [] } = useQuery({
+    queryKey: ['activity'],
+    queryFn: dashboardApi.getActivity,
+    refetchInterval: 30_000,
+  })
   const stats = [
     { label: 'Total Candidates', value: candidates.length, icon: Activity },
     { label: 'Inbox', value: candidates.filter((item) => item.inboxStatus === 'inbox').length, icon: Inbox },
@@ -49,15 +54,22 @@ export function DashboardPage() {
           <CardContent className="pt-5">
             <p className="mb-4 text-sm font-semibold">Recent Activity</p>
             <div className="space-y-4">
-              {candidates.flatMap((candidate) => candidate.stageHistory ?? []).slice(0, 8).map((item) => (
+              {activities.map((item) => (
                 <div key={item.id} className="flex gap-3">
-                  <div className={`mt-2 h-2.5 w-2.5 rounded-full ${item.type === 'approval' ? 'bg-[var(--brand)]' : item.type === 'note' ? 'bg-[var(--info)]' : 'bg-[var(--text-3)]'}`} />
+                  <div className={`mt-2 h-2.5 w-2.5 rounded-full ${item.type.includes('selected') ? 'bg-[var(--brand)]' : item.type.includes('scheduled') ? 'bg-[var(--info)]' : 'bg-[var(--text-3)]'}`} />
                   <div>
-                    <p className="text-sm">{item.text}</p>
+                    <p className="text-sm">{item.message}</p>
                     <p className="text-xs text-[var(--text-2)]">{timeAgo(item.createdAt)}</p>
                   </div>
                 </div>
               ))}
+              {activities.length === 0 && (
+                <EmptyState
+                  icon={Activity}
+                  title="No recent activity yet"
+                  description="Approvals, interview bookings, resume syncs, and hires will appear here automatically."
+                />
+              )}
             </div>
           </CardContent>
         </Card>

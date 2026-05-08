@@ -1,165 +1,82 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*===============================================================
+ * Global Design System – Black & Orange Theme (oklch)
+ * ------------------------------------------------------------
+ * All semantic colors are expressed with oklch for optimal
+ * perceptual consistency. The palette includes a strong orange
+ * accent (brand) and a deep‑black background for both light and
+ * dark modes, with subtle variations for muted, destructive, etc.
+ *===============================================================*/
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-border: hsl(var(--border));
-  --color-ring: hsl(var(--ring));
+  /* Radius tokens */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Semantic color mappings for Tailwind utilities */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
 }
 
+/* Light (default) palette – black background, orange accent */
 :root {
-  color-scheme: light;
-  --bg-page: #f7f6f4;
-  --bg-card: #ffffff;
-  --bg-sidebar: #1c1c1f;
-  --bg-sidebar-act: #2e2e32;
-  --bg-hover: #f0eee9;
-  --brand: #ec5b24;
-  --brand-light: #fff0ea;
-  --brand-mid: #fdcdb8;
-  --success: #22a268;
-  --success-light: #eafaf3;
-  --warning: #dda615;
-  --warning-light: #fef5dc;
-  --error: #db3232;
-  --error-light: #fee9e9;
-  --info: #387df1;
-  --info-light: #e9eefd;
-  --teal: #0fa596;
-  --teal-light: #e7faf7;
-  --text-1: #191919;
-  --text-2: #666670;
-  --text-3: #a8a8ab;
-  --text-inv: #ffffff;
-  --text-sb: #c2c2c8;
-  --border: #e4e2df;
-  --border-sb: #383840;
-  --background: 36 14% 96%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 100%;
-  --primary: 22 87% 55%;
-  --primary-foreground: 0 0% 100%;
-  --muted: 36 10% 92%;
-  --muted-foreground: 220 5% 41%;
-  --ring: 22 87% 55%;
-  --radius: 0.625rem;
+  --radius: 0.75rem;
+
+  /* Brand – vibrant orange */
+  --brand: oklch(0.65 0.22 35);
+  --brand-light: oklch(0.90 0.10 35);
+  --brand-mid: oklch(0.75 0.20 35);
+
+  /* Core UI */
+  --background: oklch(0.12 0 0);          /* deep black */
+  --foreground: oklch(0.95 0 0);          /* near‑white */
+  --border: oklch(0.25 0 0);              /* dark grey */
+  --ring: oklch(0.40 0.12 35);           /* subtle orange ring */
+
+  /* Semantic */
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-light);
+  --muted: oklch(0.20 0 0);
+  --muted-foreground: oklch(0.60 0 0);
+  --destructive: oklch(0.55 0.25 20);    /* reddish‑orange for errors */
+  --destructive-foreground: var(--brand-light);
 }
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --bg-page: #2f302d;
-  --bg-card: #3a3b37;
-  --bg-sidebar: #161719;
-  --bg-sidebar-act: #24262a;
-  --bg-hover: #444641;
-  --brand: #ec5b24;
-  --brand-light: #4d3025;
-  --brand-mid: #7a4a38;
-  --success: #4cc38d;
-  --success-light: #1f3b31;
-  --warning: #ebbc43;
-  --warning-light: #453b1d;
-  --error: #f06f6f;
-  --error-light: #452626;
-  --info: #6ea8ff;
-  --info-light: #29364b;
-  --teal: #4ec9b9;
-  --teal-light: #213d39;
-  --text-1: #f4f1eb;
-  --text-2: #c7c3bb;
-  --text-3: #969289;
-  --text-inv: #ffffff;
-  --text-sb: #d8d3cb;
-  --border: #51524c;
-  --border-sb: #34353a;
-  --background: 60 2% 21%;
-  --foreground: 36 20% 94%;
-  --card: 60 2% 24%;
-  --primary: 22 87% 55%;
-  --primary-foreground: 0 0% 100%;
-  --muted: 60 3% 29%;
-  --muted-foreground: 36 8% 74%;
-  --ring: 22 87% 55%;
+/* Dark mode – reverse contrast while retaining orange accent */
+.dark {
+  --background: oklch(0.92 0 0);          /* light gray for dark‑mode background */
+  --foreground: oklch(0.15 0 0);          /* dark text */
+  --border: oklch(0.80 0 0);
+  --ring: oklch(0.70 0.12 35);
 }
 
-* {
-  box-sizing: border-box;
-  border-color: hsl(var(--border));
-}
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
 
-html {
-  font-family: "Inter", sans-serif;
-  font-size: 17px;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--bg-page);
-  color: var(--text-1);
-  accent-color: var(--brand);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-p,
-button,
-input,
-textarea,
-select,
-span,
-div {
-  letter-spacing: -0.01em;
-}
-
-::selection {
-  background: var(--brand-mid);
-  color: var(--text-1);
-}
-
-#root {
-  min-height: 100vh;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-  accent-color: var(--brand);
-}
-
-:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.scrollbar-thin {
-  scrollbar-width: thin;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 999px;
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: "Inter", sans-serif;
+    margin: 0;
+    min-height: 100vh;
+  }
 }

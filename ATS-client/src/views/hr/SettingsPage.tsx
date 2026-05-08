@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FolderSync, Mail, Plus, Trash2, Upload } from 'lucide-react'
-import { ChangeEvent, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { companyApi, inviteApi, roundsApi, syncApi } from '../../api'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Button } from '../../components/ui/button'
@@ -44,6 +44,7 @@ export function SettingsPage() {
   const { data: invites = [] } = useQuery({ queryKey: ['invites'], queryFn: inviteApi.list, staleTime: 30_000 })
   const { data: driveConfig } = useQuery({ queryKey: ['drive-config'], queryFn: companyApi.getDriveConfig, staleTime: 60_000 })
   const { data: syncStatus } = useQuery({ queryKey: ['sync-status'], queryFn: syncApi.status, refetchInterval: 3000 })
+  const wasSyncRunning = useRef(false)
   const [stageModal, setStageModal] = useState(false)
   const profileMutation = useMutation({
     mutationFn: companyApi.updateProfile,
@@ -107,6 +108,16 @@ export function SettingsPage() {
       setMessage('Unable to start sync')
     },
   })
+
+  useEffect(() => {
+    const currentlyRunning = syncStatus?.isSyncRunning ?? false
+    if (wasSyncRunning.current && !currentlyRunning) {
+      qc.invalidateQueries({ queryKey: ['candidates'] })
+      qc.invalidateQueries({ queryKey: ['roles'] })
+      qc.invalidateQueries({ queryKey: ['sync-status'] })
+    }
+    wasSyncRunning.current = currentlyRunning
+  }, [qc, syncStatus])
 
   const selectedRound = inviteRounds.find((round) => String(round.roundNumber) === inviteForm.roundNumber)
   const nextRoundNumber = rounds.length ? Math.max(...rounds.map((round) => round.roundNumber)) + 1 : 1

@@ -3,7 +3,15 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '../../lib/utils'
 
-export function SlotCalendar({ value, onChange }: { value?: Date; onChange: (date: Date) => void }) {
+export function SlotCalendar({
+  value,
+  minDate,
+  onChange,
+}: {
+  value?: Date
+  minDate?: Date
+  onChange: (date: Date) => void
+}) {
   const [month, setMonth] = useState(value ?? new Date())
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(month))
@@ -27,7 +35,8 @@ export function SlotCalendar({ value, onChange }: { value?: Date; onChange: (dat
       <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--text-2)]">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => <span key={day}>{day}</span>)}
         {days.map((date) => {
-          const disabled = isBefore(date, new Date()) && !isToday(date)
+          const minimum = minDate ?? new Date()
+          const disabled = isBefore(date, minimum) && !isSameDay(date, minimum) && !isToday(date)
           return (
             <button
               key={date.toISOString()}

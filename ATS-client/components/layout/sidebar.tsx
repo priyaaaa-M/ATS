@@ -69,7 +69,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[260px] flex-col border-r border-border bg-surface md:flex">
+    <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[200px] flex-col border-r border-border bg-surface md:flex">>
       {/* Company Logo Section */}
       <div className="flex items-center gap-3 p-4 group">
         <div 
@@ -189,9 +189,10 @@ export function Sidebar() {
               Keyboard shortcuts
             </button>
             <Separator className="my-1 bg-border" />
-            <button 
+            <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10"
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
+              title="Log out"
             >
               <LogOut className="h-4 w-4" />
               Sign out

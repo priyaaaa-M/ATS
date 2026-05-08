@@ -31,8 +31,10 @@ export function AppShell() {
   }, [resizing, setSidebarWidth])
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar candidateCount={candidates.length} openRoles={openRoles} />
+    <div className="flex h-screen overflow-hidden">
+      <aside className="h-screen flex-shrink-0 overflow-y-auto">
+        <Sidebar candidateCount={candidates.length} openRoles={openRoles} />
+      </aside>
       <button
         type="button"
         aria-label="Resize sidebar"
@@ -40,9 +42,9 @@ export function AppShell() {
         style={{ left: sidebarWidth - 2 }}
         className="fixed top-0 z-40 hidden h-screen w-1 cursor-col-resize bg-transparent transition hover:bg-[var(--brand)] md:block"
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 h-screen overflow-y-auto">
         <TopBar />
-        <main className="p-6">
+        <main className="min-h-0 p-6">
           <Outlet />
         </main>
       </div>

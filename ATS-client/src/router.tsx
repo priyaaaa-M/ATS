@@ -7,7 +7,7 @@ import { DashboardPage } from './views/hr/DashboardPage'
 import { CandidatesPage } from './views/hr/CandidatesPage'
 import { RolesPage } from './views/hr/RolesPage'
 import { InterviewsPage } from './views/hr/InterviewsPage'
-import { SettingsPage } from './views/hr/SettingsPage'
+import { SettingsPage } from './pages/Settings'
 import { InterviewerDashboardPage } from './views/interviewer/InterviewerDashboardPage'
 import { RouteErrorState } from './components/shared/RouteErrorState'
 
