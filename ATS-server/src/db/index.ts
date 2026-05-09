@@ -7,6 +7,8 @@ import * as schema from './schema'
 const client = postgres(config.supabase.dbUrl, {
   ssl: config.isDev ? { rejectUnauthorized: false } : 'require',
   max: 10,
+  prepare: false,
+  connect_timeout: 30,
 })
 
 export const db = drizzle(client, { schema })

@@ -13,7 +13,7 @@ let sql = postgres(config.supabase.dbUrl, {
   max: 1,
   prepare: false,
   idle_timeout: 20,
-  connect_timeout: 10,
+  connect_timeout: 30,
 })
 
 function isRetryableSessionStoreError(error: unknown) {
@@ -21,7 +21,7 @@ function isRetryableSessionStoreError(error: unknown) {
     ? String((error as { code?: string }).code)
     : ''
 
-  return code === '26000'
+  return code === '26000' || code === 'CONNECT_TIMEOUT' || code === 'ECONNRESET'
 }
 
 async function recreateSessionClient() {
@@ -35,7 +35,7 @@ async function recreateSessionClient() {
     max: 1,
     prepare: false,
     idle_timeout: 20,
-    connect_timeout: 10,
+    connect_timeout: 30,
   })
 }
 
@@ -48,6 +48,8 @@ async function runSessionQuery<T>(operation: () => Promise<T>): Promise<T> {
     }
 
     await recreateSessionClient()
+    // Add a small delay before retrying
+    await new Promise(resolve => setTimeout(resolve, 1000))
     return operation()
   }
 }
@@ -84,7 +86,9 @@ class PostgresSessionStore extends session.Store {
 
   constructor() {
     super()
-    this.ready = this.ensureTable()
+    this.ready = this.ensureTable().catch(err => {
+      console.error('Session store initialization failed:', err)
+    })
   }
 
   private async ensureTable() {
