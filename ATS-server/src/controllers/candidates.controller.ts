@@ -278,4 +278,58 @@ export const candidatesController = {
       return next(err)
     }
   },
+  create: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name, email, phone, role } = req.body
+      const file = req.file
+      const userId = req.session.userId!
+
+      let resumeUrl = undefined
+      let parsedData = undefined
+      let atsScore = undefined
+
+      if (file) {
+        // 1. Upload to Backblaze
+        const upload = await require('../services/backblaze.service').backblazeService.uploadResume(
+          file.buffer,
+          file.originalname,
+          file.mimetype,
+          { userId, role, source: 'manual' }
+        )
+        resumeUrl = upload.fileUrl
+
+        // 2. Parse with Groq
+        try {
+          const parsed = await require('../services/parser.service').parserService.parseBulk([{
+            buffer: file.buffer,
+            mimeType: file.mimetype,
+            filename: file.originalname,
+            role
+          }])
+          if (parsed.length > 0) {
+            parsedData = parsed[0].sections
+            atsScore = parsed[0].atsScore
+          }
+        } catch (err) {
+          console.error('[MANUAL] Parsing failed:', err)
+        }
+      }
+
+      const result = await candidateService.create({
+        userId,
+        name: name || (file?.originalname.split('.')[0]),
+        candidateEmail: email,
+        phone,
+        role: role || 'unassigned',
+        resumeUrl,
+        parsedData,
+        atsScore,
+        source: 'manual'
+      })
+
+      return res.status(201).json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
 }

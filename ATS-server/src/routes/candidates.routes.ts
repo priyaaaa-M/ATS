@@ -3,10 +3,17 @@ import { candidatesController } from '../controllers/candidates.controller'
 import { authMiddleware } from '../middleware/auth.middleware'
 import { requireRole } from '../middleware/role.middleware'
 
+import multer from 'multer'
+
 const router = Router()
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+})
 
 router.use(authMiddleware)
 router.get('/', candidatesController.list)
+router.post('/', upload.single('resume'), candidatesController.create)
 router.get('/counts', candidatesController.counts)
 router.get('/pipeline', requireRole('hr'), candidatesController.pipeline)
 router.get(
