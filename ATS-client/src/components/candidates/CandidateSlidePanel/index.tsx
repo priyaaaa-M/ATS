@@ -302,9 +302,9 @@ export function CandidateSlidePanel({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/35" onClick={closePanel} />
-      <div style={{ width: panelWidth }} className="fixed right-0 top-0 z-50 flex h-full flex-col border-l border-border bg-card shadow-2xl">
-        <div className="absolute left-0 top-0 bottom-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-primary/50" onMouseDown={onMouseDown} />
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={closePanel} />
+      <div style={{ width: panelWidth }} className="fixed right-0 top-0 z-50 flex h-full flex-col border-l border-border bg-background shadow-2xl">
+        <div className="absolute left-0 top-0 bottom-0 z-10 w-1 cursor-col-resize transition-colors hover:bg-brand/50" onMouseDown={onMouseDown} />
 
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <button onClick={closePanel} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted">

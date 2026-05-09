@@ -78,16 +78,16 @@ export function BookSlotTab({
   return (
     <div className="grid gap-8 lg:grid-cols-2">
       <div className="space-y-4">
-        <div><p className="mb-2 text-[11px] font-semibold text-[var(--text-2)]">CANDIDATE EMAIL</p><Input value={candidateEmail} onChange={(e) => setCandidateEmail(e.target.value)} /></div>
+        <div><p className="mb-2 text-[11px] font-semibold text-muted-foreground">CANDIDATE EMAIL</p><Input value={candidateEmail} onChange={(e) => setCandidateEmail(e.target.value)} /></div>
         <div>
-          <p className="mb-2 text-[11px] font-semibold text-[var(--text-2)]">INTERVIEWER EMAIL</p>
+          <p className="mb-2 text-[11px] font-semibold text-muted-foreground">INTERVIEWER EMAIL</p>
           <Input value={effectiveInterviewerEmail} readOnly disabled />
-          <p className="mt-1 text-xs text-[var(--text-2)]">
+          <p className="mt-1 text-xs text-muted-foreground">
             Auto-filled from {candidate.currentRound || 1}{candidate.currentRound === 1 ? 'st' : candidate.currentRound === 2 ? 'nd' : candidate.currentRound === 3 ? 'rd' : 'th'} round configuration.
           </p>
         </div>
         <div>
-          <p className="mb-2 text-[11px] font-semibold text-[var(--text-2)]">DURATION</p>
+          <p className="mb-2 text-[11px] font-semibold text-muted-foreground">DURATION</p>
           <div className="flex flex-wrap gap-2">
             {durations.map((duration) => <Button key={duration} size="sm" variant={duration === durationMinutes ? 'default' : 'secondary'} onClick={() => setDurationMinutes(duration)}>{duration === 60 ? '1 hr' : duration === 120 ? '2 hr' : `${duration} min`}</Button>)}
           </div>
@@ -96,8 +96,8 @@ export function BookSlotTab({
       </div>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold text-[var(--text-2)]">AVAILABLE SLOTS</p>
-          <p className="text-[11px] text-[var(--text-2)]">{query.data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
+          <p className="text-[11px] font-semibold text-muted-foreground">AVAILABLE SLOTS</p>
+          <p className="text-[11px] text-muted-foreground">{query.data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
         </div>
         {!effectiveInterviewerEmail ? (
           <p className="text-sm text-red-500">
@@ -105,13 +105,13 @@ export function BookSlotTab({
           </p>
         ) : null}
         {isBefore(date, startOfDay(new Date())) ? (
-          <p className="text-sm text-[var(--text-2)]">Past dates cannot be booked. Please choose today or a future day.</p>
+          <p className="text-sm text-muted-foreground">Past dates cannot be booked. Please choose today or a future day.</p>
         ) : null}
         <SlotTimeline busy={query.data?.busy ?? []} free={filteredFree} selected={selected} onSelect={setSelected} durationMinutes={durationMinutes} />
         {selected ? (
-          <div className="rounded-[12px] border-l-4 border-[var(--brand)] bg-[var(--brand-light)] p-4">
+          <div className="rounded-[12px] border-l-4 border-brand bg-brand/10 p-4">
             <p className="text-sm font-semibold">{format(new Date(selected.start), 'EEEE, MMM d')}</p>
-            <p className="text-sm text-[var(--text-2)]">{format(new Date(selected.start), 'hh:mm a')} – {format(new Date(selected.end), 'hh:mm a')}</p>
+            <p className="text-sm text-muted-foreground">{format(new Date(selected.start), 'hh:mm a')} – {format(new Date(selected.end), 'hh:mm a')}</p>
           </div>
         ) : null}
         <div className="flex gap-3">

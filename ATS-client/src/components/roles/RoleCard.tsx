@@ -1,7 +1,6 @@
 import type { Role } from '../../types'
 import { StatusBadge } from '../candidates/StatusBadge'
 import { Button } from '../ui/button'
-import { Card, CardContent } from '../ui/card'
 
 function getPipelineWidth(role: Role) {
   const submitted = role.pipelineCounts?.submitted || 0
@@ -27,119 +26,107 @@ export function RoleCard({
   const widths = getPipelineWidth(role)
 
   return (
-    <Card className="group overflow-hidden rounded-[24px] border border-border/80 bg-card/90 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-      <div className="h-1 w-full bg-gradient-to-r from-emerald-400 via-primary to-orange-400" />
-      <CardContent className="space-y-4 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/12 text-sm font-semibold text-primary">
-                {(role.title || role.name).slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-lg font-semibold leading-tight text-foreground">
-                  {role.title || role.name}
-                </p>
-                <p className="text-sm text-muted-foreground">{role.name}</p>
-              </div>
+    <div className="group h-full flex flex-col rounded-2xl p-6 bg-transparent">
+      <div className="flex items-start justify-between gap-3 mb-6">
+        <div className="space-y-1.5 flex-1">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand/20 to-brand/5 text-sm font-bold text-brand ring-1 ring-brand/20 shadow-inner">
+              {(role.title || role.name).slice(0, 2).toUpperCase()}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full bg-muted px-3 py-1">
-                {role.hiringManagerName || 'No hiring manager'}
-              </span>
-              <span className="rounded-full bg-muted px-3 py-1">
-                {role.screeningQuestions?.length || 0} criteria
-              </span>
-            </div>
-          </div>
-
-          <StatusBadge status={status === 'closed' ? 'paused' : status} />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Candidates
-            </p>
-            <p className="mt-1.5 text-xl font-semibold text-foreground">
-              {role.candidateCount ?? 0}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Interview Rounds
-            </p>
-            <p className="mt-1.5 text-xl font-semibold text-foreground">
-              {role.roundCount ?? role.interviewStages?.length ?? 0}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-border/70 bg-muted/30 p-3.5">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Avg ATS
-            </p>
-            <p className="mt-1.5 text-xl font-semibold text-foreground">
-              {role.averageAtsScore ?? 0}%
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-border/70 bg-muted/20 p-3.5">
-          <div className="mb-2.5 flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Pipeline Health</p>
-            <p className="text-xs text-muted-foreground">
-              Submitted {role.pipelineCounts?.submitted || 0} · In Process{' '}
-              {role.pipelineCounts?.inProcess || 0} · Hired {role.pipelineCounts?.hired || 0}
-            </p>
-          </div>
-
-          <div className="h-3 overflow-hidden rounded-full bg-muted">
-            <div className="flex h-full w-full">
-              <div
-                className="h-full bg-orange-500"
-                style={{ width: `${widths.submitted}%` }}
-              />
-              <div
-                className="h-full bg-sky-500"
-                style={{ width: `${widths.inProcess}%` }}
-              />
-              <div
-                className="h-full bg-emerald-500"
-                style={{ width: `${widths.hired}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="mt-2.5 grid grid-cols-3 gap-3 text-xs text-muted-foreground">
-            <div className="rounded-xl bg-background/60 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wide">Submitted</p>
-              <p className="mt-0.5 text-sm font-semibold text-foreground">
-                {role.pipelineCounts?.submitted || 0}
+            <div>
+              <p className="text-xl font-bold leading-tight text-white group-hover:text-brand transition-colors">
+                {role.title || role.name}
               </p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mt-0.5">{role.name}</p>
             </div>
-            <div className="rounded-xl bg-background/60 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wide">In Process</p>
-              <p className="mt-0.5 text-sm font-semibold text-foreground">
-                {role.pipelineCounts?.inProcess || 0}
-              </p>
-            </div>
-            <div className="rounded-xl bg-background/60 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wide">Hired</p>
-              <p className="mt-0.5 text-sm font-semibold text-foreground">
-                {role.pipelineCounts?.hired || 0}
-              </p>
-            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="rounded-lg bg-white/5 border border-white/10 px-2 py-1">
+              {role.hiringManagerName || 'No hiring manager'}
+            </span>
+            <span className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand"></span>
+              {role.screeningQuestions?.length || 0} criteria
+            </span>
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <Button className="h-11 flex-1" onClick={onClick}>
-            View Role
-          </Button>
-          <Button variant="outline" className="h-11 flex-1" onClick={onClick}>
-            Edit Criteria
-          </Button>
+        <StatusBadge status={status === 'closed' ? 'paused' : status} />
+      </div>
+
+      <div className="grid gap-3 grid-cols-3 mb-6">
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Candidates
+          </p>
+          <p className="mt-1 text-2xl font-bold text-white">
+            {role.candidateCount ?? 0}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Rounds
+          </p>
+          <p className="mt-1 text-2xl font-bold text-white">
+            {role.roundCount ?? role.interviewStages?.length ?? 0}
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Avg Score
+          </p>
+          <p className="mt-1 text-2xl font-bold text-white flex items-baseline justify-center gap-0.5">
+            {role.averageAtsScore ?? 0}<span className="text-sm text-muted-foreground">%</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 mb-6 flex-1 flex flex-col justify-end">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-white">Pipeline Health</p>
+        </div>
+
+        <div className="h-2 overflow-hidden rounded-full bg-white/10 shadow-inner">
+          <div className="flex h-full w-full">
+            <div
+              className="h-full bg-brand shadow-[0_0_8px_rgba(249,115,22,0.6)]"
+              style={{ width: `${widths.submitted}%` }}
+            />
+            <div
+              className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
+              style={{ width: `${widths.inProcess}%` }}
+            />
+            <div
+              className="h-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              style={{ width: `${widths.hired}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-3 flex justify-between gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-brand"></div>
+            <span>Applied ({role.pipelineCounts?.submitted || 0})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <span>In Process ({role.pipelineCounts?.inProcess || 0})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <span>Hired ({role.pipelineCounts?.hired || 0})</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-auto pt-2">
+        <Button className="h-11 flex-1 btn-primary-glow rounded-xl" onClick={onClick}>
+          View Role
+        </Button>
+        <Button variant="outline" className="h-11 flex-1 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-white" onClick={onClick}>
+          Edit Criteria
+        </Button>
+      </div>
+    </div>
   )
 }

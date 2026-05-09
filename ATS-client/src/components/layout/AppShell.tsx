@@ -1,10 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
 import { useCompanyBrand } from '../../hooks/useCompanyBrand'
 import { useThemeMode } from '../../hooks/useThemeMode'
 import { useCandidates } from '../../hooks/useCandidates'
 import { useRoles } from '../../hooks/useRoles'
-import { useLayoutStore } from '../../store/layoutStore'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -16,45 +14,23 @@ export function AppShell() {
   const { data: candidates = [] } = useCandidates({})
   const { data: roles = [] } = useRoles()
   const openRoles = roles.filter((role) => role.status === 'open').length
-  const sidebarWidth = useLayoutStore((state) => state.sidebarWidth)
-  const setSidebarWidth = useLayoutStore((state) => state.setSidebarWidth)
-  const [resizing, setResizing] = useState(false)
-
-  useEffect(() => {
-    if (!resizing) return
-    const onMove = (event: MouseEvent) => setSidebarWidth(event.clientX)
-    const onUp = () => setResizing(false)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-  }, [resizing, setSidebarWidth])
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="h-screen flex-shrink-0 overflow-y-auto">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <aside className="h-screen flex-shrink-0 relative z-20">
         <Sidebar candidateCount={candidates.length} openRoles={openRoles} />
       </aside>
-      <button
-        type="button"
-        aria-label="Resize sidebar"
-        onMouseDown={() => setResizing(true)}
-        style={{ left: sidebarWidth - 2 }}
-        className="fixed top-0 z-40 hidden h-screen w-1 cursor-col-resize bg-transparent transition hover:bg-[var(--brand)] md:block"
-      />
-      <div className="min-w-0 flex-1 h-screen overflow-y-auto">
+      <div className="min-w-0 flex-1 h-screen flex flex-col overflow-hidden relative z-10">
         <TopBar />
-        <main className="min-h-0 p-6">
-          <AnimatePresence mode="wait" initial={false}>
+        <main className="min-h-0 flex-1 p-8 pt-6 overflow-y-auto">
+          <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full h-full"
+              initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full h-full max-w-[1600px] mx-auto"
             >
               <Outlet />
             </motion.div>
