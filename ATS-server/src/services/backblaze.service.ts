@@ -206,6 +206,8 @@ export const backblazeService = {
             filename: string
             mimeType: string
             role?: string
+            sourceName?: string
+            campaignName?: string
         }>,
         userId: string,
         onProgress?: (done: number, total: number) => void
@@ -240,7 +242,7 @@ export const backblazeService = {
                     const clean = file.filename
                         .replace(/[^a-zA-Z0-9._-]/g, '_')
                     const fileName =
-                        `resumes/${userId}/${file.role || 'general'}` +
+                        `resumes/${userId}/${file.role || 'general'}/${file.sourceName || 'manual-upload'}` +
                         `/${timestamp}-${clean}`
 
                     return uploadFile(
@@ -252,6 +254,8 @@ export const backblazeService = {
                         {
                             role: file.role || 'general',
                             source: 'manual',
+                            candidateSource: file.sourceName || 'manual-upload',
+                            campaign: file.campaignName || '',
                         }
                     )
                 })

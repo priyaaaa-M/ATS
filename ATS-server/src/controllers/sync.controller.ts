@@ -33,4 +33,13 @@ export const syncController = {
       return next(err)
     }
   },
+
+  validateDrive: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await syncService.validateDriveStructure(req.session.userId!)
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
 }

@@ -6,10 +6,12 @@ import { companyRoutes } from './company.routes'
 import { dashboardRoutes } from './dashboard.routes'
 import { feedbackRoutes } from './feedback.routes'
 import { interviewsRoutes } from './interviews.routes'
+import { importBatchRoutes } from './importBatch.routes'
 import { inviteRoutes } from './invite.routes'
 import { rolesRoutes } from './roles.routes'
 import { roundsRoutes } from './rounds.routes'
 import { slackRoutes } from './slack.routes'
+import { sourceRoutes } from './source.routes'
 import { syncRoutes } from './sync.routes'
 import { transcriptRoutes } from './transcript.routes'
 import { uploadRoutes } from './upload.routes'
@@ -21,6 +23,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/roles', rolesRoutes)
   app.use('/api/rounds', roundsRoutes)
   app.use('/api/interviews', interviewsRoutes)
+  app.use('/api/import-batches', importBatchRoutes)
   app.use('/api/calendar', calendarRoutes)
   app.use('/api/invite', inviteRoutes)
   app.use('/api/feedback', feedbackRoutes)
@@ -28,6 +31,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/company', companyRoutes)
   app.use('/api/dashboard', dashboardRoutes)
   app.use('/api/slack', slackRoutes)
+  app.use('/api/sources', sourceRoutes)
   app.use('/api/sync', syncRoutes)
   app.use('/api/upload', uploadRoutes)
   app.use('/api/webhooks', webhookRoutes)

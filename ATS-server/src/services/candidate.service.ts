@@ -35,6 +35,7 @@ const createCandidateSchema = z.object({
   phone: z.string().optional(),
   resumeUrl: z.string().optional(),
   driveFileId: z.string().optional(),
+  source: z.string().min(1).optional(),
   parsedData: z.any().optional(),
   atsScore: z.number().int().min(0).max(100).optional(),
 })
@@ -44,6 +45,7 @@ const updateDriveCandidateSchema = z.object({
   candidateEmail: z.string().email().optional(),
   phone: z.string().optional(),
   resumeUrl: z.string().optional(),
+  source: z.string().min(1).optional(),
   parsedData: z.any().optional(),
   atsScore: z.number().int().min(0).max(100).optional(),
 })
@@ -404,6 +406,7 @@ export const candidateService = {
     }
 
     if (filters.role) conditions.push(eq(candidates.role, filters.role))
+    if (filters.source) conditions.push(eq(candidates.source, filters.source))
     if (filters.status) conditions.push(eq(candidates.status, filters.status))
     if (filters.round) conditions.push(eq(candidates.currentRound, filters.round))
     if (filters.minAtsScore !== undefined) {
@@ -1175,6 +1178,17 @@ export const candidateService = {
     db.query.candidates.findFirst({
       where: and(eq(candidates.userId, userId), eq(candidates.driveFileId, driveFileId)),
     }),
+
+  findDuplicateByEmail: async (userId: string, email?: string, roleName?: string) => {
+    if (!email) return null
+    return db.query.candidates.findFirst({
+      where: and(
+        eq(candidates.userId, userId),
+        ilike(candidates.candidateEmail, email.toLowerCase()),
+        roleName ? eq(candidates.role, roleName) : undefined
+      ),
+    })
+  },
 
   deleteDriveCandidatesExcept: async (userId: string, keepDriveFileIds: string[]) => {
     const ownedCandidates = await db.query.candidates.findMany({
