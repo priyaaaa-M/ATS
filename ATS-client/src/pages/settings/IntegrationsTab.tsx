@@ -102,6 +102,20 @@ export function IntegrationsTab() {
     },
   })
 
+  const validateDriveMutation = useMutation({
+    mutationFn: () => syncApi.validateDrive(),
+    onSuccess: (result) => {
+      if (result.valid) {
+        toast.success(`Drive structure looks good: ${result.folders.length} source folders found`)
+        return
+      }
+      toast.warning(result.issues[0]?.message || 'Drive structure needs attention')
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Could not validate Drive')
+    },
+  })
+
   const testSlackMutation = useMutation({
     mutationFn: async () => {
       await companyApi.updateProfile({
@@ -192,6 +206,21 @@ export function IntegrationsTab() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => validateDriveMutation.mutate()}
+              disabled={validateDriveMutation.isPending || !isDriveConnected}
+            >
+              {validateDriveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Checking...
+                </>
+              ) : (
+                'Validate'
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending || isSyncing}
             >
@@ -209,10 +238,38 @@ export function IntegrationsTab() {
           <div className="rounded-lg bg-[var(--muted)]/50 p-3 mt-3 text-xs text-[var(--text-2)] leading-relaxed">
             <strong className="text-[var(--text-1)]">Required structure:</strong>
             <br />
-            📁 resume_ats/ → 📁 rules/ → 📁 backend/ → 📄 resume.pdf
+            resume_ats/ - rules/ - frontend/ - on-campus/ - resume.pdf
             <br />
-            Each subfolder inside <code>rules/</code> becomes a role automatically.
+            Each role folder should contain source folders like on-campus, referral, or agency.
           </div>
+          {validateDriveMutation.data && (
+            <div className="mt-3 rounded-lg border border-[var(--border)] bg-[var(--muted)]/20 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-2)]">
+                  Validation result
+                </p>
+                <span className={validateDriveMutation.data.valid ? 'text-xs text-green-400' : 'text-xs text-yellow-400'}>
+                  {validateDriveMutation.data.valid ? 'Ready' : 'Needs attention'}
+                </span>
+              </div>
+              {validateDriveMutation.data.issues.map((issue) => (
+                <p key={issue.type} className="mb-2 text-xs text-yellow-400">
+                  {issue.message}
+                </p>
+              ))}
+              <div className="grid gap-2 sm:grid-cols-2">
+                {validateDriveMutation.data.folders.slice(0, 6).map((folder) => (
+                  <div key={`${folder.roleName}-${folder.sourceName}`} className="rounded-md border border-[var(--border)] px-3 py-2 text-xs text-[var(--text-2)]">
+                    <span className="font-medium text-[var(--text-1)]">{folder.roleName}</span>
+                    {' / '}
+                    {folder.sourceFolderName}
+                    {' - '}
+                    {folder.resumeCount} resumes
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

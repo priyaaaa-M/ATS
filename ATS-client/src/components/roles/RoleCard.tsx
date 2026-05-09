@@ -17,10 +17,12 @@ function getPipelineWidth(role: Role) {
 
 export function RoleCard({
   role,
-  onClick,
+  onView,
+  onEditCriteria,
 }: {
   role: Role
-  onClick: () => void
+  onView: () => void
+  onEditCriteria: () => void
 }) {
   const status = role.status ?? 'open'
   const widths = getPipelineWidth(role)
@@ -120,10 +122,10 @@ export function RoleCard({
       </div>
 
       <div className="flex gap-3 mt-auto pt-2">
-        <Button className="h-11 flex-1 btn-primary-glow rounded-xl" onClick={onClick}>
+        <Button className="h-11 flex-1 btn-primary-glow rounded-xl" onClick={onView}>
           View Role
         </Button>
-        <Button variant="outline" className="h-11 flex-1 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-white" onClick={onClick}>
+        <Button variant="outline" className="h-11 flex-1 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-white" onClick={onEditCriteria}>
           Edit Criteria
         </Button>
       </div>

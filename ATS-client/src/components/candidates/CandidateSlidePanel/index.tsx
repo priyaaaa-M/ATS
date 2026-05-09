@@ -4,6 +4,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CalendarCheck,
+  CheckCircle2,
   DollarSign,
   Download,
   Info,
@@ -437,10 +439,48 @@ export function CandidateSlidePanel({
 
   const tabs = isInterviewer
     ? ['overview', 'linkedin', 'resume', 'activity', 'notes', 'bookslot', 'feedback']
-    : ['overview', 'linkedin', 'resume', 'activity', 'scorecards', 'notes']
+    : ['overview', 'resume', 'scorecards', 'bookslot', 'notes', 'activity', 'linkedin']
 
   const screeningAnswers = candidate?.screeningAnswers || candidate?.parsedData?.screeningAnswers || []
   const summary = candidate?.parsedData?.summary || generateSummary(candidate?.parsedData)
+  const statusLabel =
+    candidate?.status === 'hr_approved'
+      ? 'Approved for interview'
+      : candidate?.status === 'scheduled'
+        ? 'Interview scheduled'
+        : candidate?.status === 'completed'
+          ? 'Interview completed'
+          : candidate?.status === 'selected'
+            ? 'Selected'
+            : candidate?.status === 'rejected'
+              ? 'Rejected'
+              : 'Needs HR review'
+  const nextAction =
+    isInterviewer
+      ? 'Record the interview decision after the conversation.'
+      : candidate?.status === 'hr_approved'
+        ? 'Book the interview slot with the assigned interviewer.'
+        : candidate?.status === 'scheduled'
+          ? 'Track interview timing and wait for feedback.'
+          : candidate?.status === 'rejected'
+            ? 'Review history or reopen manually if needed.'
+            : 'Review resume fit, then approve, pause, or reject.'
+  const candidateSignals = [
+    candidate?.role ? { label: 'Role', value: candidate.role } : null,
+    candidate?.source ? { label: 'Source', value: candidate.source } : null,
+    candidate?.atsScore !== null && candidate?.atsScore !== undefined
+      ? { label: 'ATS score', value: `${candidate.atsScore}%` }
+      : null,
+    scheduledInterview
+      ? {
+          label: 'Interview',
+          value: format(
+            new Date(scheduledInterview.scheduledStartTime || scheduledInterview.scheduledAt || new Date()),
+            'MMM d, h:mm a',
+          ),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>
 
   if (!open || !candidate) return null
 
@@ -467,12 +507,35 @@ export function CandidateSlidePanel({
 
         <div className="border-b border-border px-5 py-4">
           <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">{candidate.name}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{candidate.parsedData?.headline || candidate.role}</p>
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                  {statusLabel}
+                </Badge>
+                {candidate.inboxStatus === 'inbox' && (
+                  <Badge variant="outline" className="border-amber-500/25 bg-amber-500/10 text-amber-500">
+                    Needs review
+                  </Badge>
+                )}
+              </div>
+              <h2 className="truncate text-xl font-semibold">{candidate.name}</h2>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {candidate.parsedData?.headline || summary}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {candidateSignals.map((signal) => (
+                  <span
+                    key={signal.label}
+                    className="rounded-lg border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
+                  >
+                    <span className="text-foreground">{signal.value}</span>
+                    <span className="ml-1">{signal.label}</span>
+                  </span>
+                ))}
+              </div>
             </div>
             {isInterviewer ? (
-              <div className="flex gap-2">
+              <div className="flex flex-shrink-0 gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -493,10 +556,21 @@ export function CandidateSlidePanel({
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-shrink-0 items-center gap-2">
+                {candidate.status === 'hr_approved' ? (
+                  <Button size="sm" onClick={() => setActiveTab('bookslot')}>
+                    <CalendarCheck className="mr-1 h-3.5 w-3.5" />
+                    Book interview
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending || candidate.status === 'hr_approved'}>
+                    {approveMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <CheckCircle2 className="mr-1 h-3.5 w-3.5" />}
+                    Approve
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10" onClick={() => maybeLaterMutation.mutate()} disabled={maybeLaterMutation.isPending}>
                   {maybeLaterMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                  Maybe Later
+                  Pause
                 </Button>
                 <Popover open={showRejectDropdown} onOpenChange={setShowRejectDropdown}>
                   <PopoverTrigger asChild>
@@ -523,9 +597,6 @@ export function CandidateSlidePanel({
                     </Button>
                   </PopoverContent>
                 </Popover>
-                <Button size="sm" onClick={() => approveMutation.mutate()} disabled={approveMutation.isPending || candidate.status === 'hr_approved'}>
-                  {approveMutation.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : candidate.status === 'hr_approved' ? 'Approved' : 'Interview'}
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">More <ChevronDown className="ml-1 h-3 w-3" /></Button>
@@ -537,6 +608,36 @@ export function CandidateSlidePanel({
                 </DropdownMenu>
               </div>
             )}
+          </div>
+
+          <div className="mt-4 rounded-xl border border-border bg-muted/20 p-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ClipboardList className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Recommended next step</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{nextAction}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {candidate.resumeUrl && (
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab('resume')}>
+                    Resume
+                  </Button>
+                )}
+                {!isInterviewer && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab(candidate.status === 'hr_approved' ? 'bookslot' : 'scorecards')}
+                  >
+                    {candidate.status === 'hr_approved' ? 'Book slot' : 'Scorecard'}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { Loader2, Search, Users, MoreVertical, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
-import { candidatesApi, rolesApi, roundsApi } from '../../api'
+import { candidatesApi, rolesApi, roundsApi, sourcesApi } from '../../api'
 import { CandidateSlidePanel } from '../../components/candidates/CandidateSlidePanel'
 import { BulkUploadModal } from '../../components/candidates/BulkUploadModal'
 import { PipelineBoard } from '../../components/pipeline/PipelineBoard'
@@ -30,16 +31,24 @@ function stringToColor(str: string) {
 
 export function CandidatesPage() {
   const queryClient = useQueryClient()
-  const [statusFilter, setStatusFilter] = useState('inbox')
-  const [roleFilter, setRoleFilter] = useState('all')
+  const [searchParams] = useSearchParams()
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'inbox')
+  const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || 'all')
+  const [sourceFilter, setSourceFilter] = useState(() => searchParams.get('source') || 'all')
   const [pipelineRole, setPipelineRole] = useState('')
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
 
+  useEffect(() => {
+    setStatusFilter(searchParams.get('status') || 'inbox')
+    setRoleFilter(searchParams.get('role') || 'all')
+    setSourceFilter(searchParams.get('source') || 'all')
+  }, [searchParams])
+
   const filters = useMemo(
-    () => ({ activeStatus: statusFilter, activeRole: roleFilter, search }),
-    [statusFilter, roleFilter, search]
+    () => ({ activeStatus: statusFilter, activeRole: roleFilter, activeSource: sourceFilter, search }),
+    [statusFilter, roleFilter, sourceFilter, search]
   )
 
   const { data: candidates = [], isLoading } = useQuery({
@@ -48,6 +57,7 @@ export function CandidatesPage() {
       candidatesApi.list({
         inboxStatus: statusFilter === 'all' ? undefined : statusFilter,
         role: roleFilter === 'all' ? undefined : roleFilter,
+        source: sourceFilter === 'all' ? undefined : sourceFilter,
         search: search || undefined,
       }),
   })
@@ -55,6 +65,11 @@ export function CandidatesPage() {
   const { data: roles = [] } = useQuery({
     queryKey: ['roles'],
     queryFn: () => rolesApi.list(),
+  })
+
+  const { data: sources = [] } = useQuery({
+    queryKey: ['sources'],
+    queryFn: () => sourcesApi.list(),
   })
 
   useEffect(() => {
@@ -132,6 +147,20 @@ export function CandidatesPage() {
               {roles.map((role) => (
                 <SelectItem key={role.id} value={role.name}>
                   {role.name} ({role.candidateCount || 0})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sourceFilter} onValueChange={setSourceFilter}>
+            <SelectTrigger className="h-10 w-full sm:w-48 text-sm bg-transparent border-border rounded-xl focus:ring-brand/30">
+              <SelectValue placeholder="All Sources" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              {sources.filter((source) => source.active).map((source) => (
+                <SelectItem key={source.id} value={source.name}>
+                  {source.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -286,7 +315,16 @@ export function CandidatesPage() {
                     </div>
                     
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-muted-foreground">{candidate.role}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Badge variant="outline" className="max-w-[160px] truncate border-blue-500/20 bg-blue-500/10 text-xs text-blue-400">
+                          {candidate.role}
+                        </Badge>
+                        {candidate.source && (
+                          <Badge variant="outline" className="max-w-[150px] truncate border-emerald-500/20 bg-emerald-500/10 text-xs text-emerald-400">
+                            {candidate.source}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     
                     <div>

@@ -132,6 +132,7 @@ export interface Candidate {
   candidateEmail: string
   phone?: string | null
   role: string
+  source?: string | null
   status: CandidateStatus
   currentRound?: number | null
   totalRounds?: number | null
@@ -200,6 +201,35 @@ export interface Role {
     hired: number
     rejected: number
   }
+}
+
+export interface CandidateSource {
+  id: string
+  companyId?: string | null
+  userId?: string | null
+  name: string
+  normalizedName: string
+  description?: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ImportBatch {
+  id: string
+  companyId?: string | null
+  userId: string
+  roleName?: string | null
+  sourceName?: string | null
+  campaignName?: string | null
+  importMethod: 'manual' | 'google_drive' | string
+  status: string
+  totalFiles: number
+  successfulCount: number
+  failedCount: number
+  duplicateCount: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Interview {

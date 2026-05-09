@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Briefcase, Plus, Filter, Search } from 'lucide-react'
@@ -20,6 +21,7 @@ import type { Role } from '../../types'
 
 export function RolesPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: roles = [] } = useRoles()
   const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'draft' | 'paused'>('all')
   const [activeRole, setActiveRole] = useState<Role | null>(null)
@@ -139,7 +141,11 @@ export function RolesPage() {
                 className="h-full"
               >
                 <div className="glass-card h-full transition-all hover:bg-white/[0.04]">
-                  <RoleCard role={role} onClick={() => setActiveRole(role)} />
+                  <RoleCard
+                    role={role}
+                    onView={() => navigate(`/roles/${encodeURIComponent(role.name)}`)}
+                    onEditCriteria={() => setActiveRole(role)}
+                  />
                 </div>
               </motion.div>
             ))

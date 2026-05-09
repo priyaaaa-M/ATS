@@ -6,6 +6,7 @@ import { InviteAcceptPage } from './views/auth/InviteAcceptPage'
 import { DashboardPage } from './views/hr/DashboardPage'
 import { CandidatesPage } from './views/hr/CandidatesPage'
 import { RolesPage } from './views/hr/RolesPage'
+import { RoleDetailPage } from './views/hr/RoleDetailPage'
 import { InterviewsPage } from './views/hr/InterviewsPage'
 import { SettingsPage } from './pages/Settings'
 import { InterviewerDashboardPage } from './views/interviewer/InterviewerDashboardPage'
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: 'dashboard', element: <DashboardPage />, errorElement: <RouteErrorState /> },
           { path: 'candidates', element: <CandidatesPage />, errorElement: <RouteErrorState /> },
           { path: 'roles', element: <RolesPage />, errorElement: <RouteErrorState /> },
+          { path: 'roles/:roleName', element: <RoleDetailPage />, errorElement: <RouteErrorState /> },
           { path: 'interviews', element: <InterviewsPage />, errorElement: <RouteErrorState /> },
           { path: 'settings', element: <SettingsPage />, errorElement: <RouteErrorState /> },
         ],
