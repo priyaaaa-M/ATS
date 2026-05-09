@@ -6,7 +6,9 @@ import { AppError } from '../types'
 import { activityService } from './activity.service'
 import { candidateService } from './candidate.service'
 import { driveService } from './drive.service'
+import { importBatchService } from './importBatch.service'
 import { parserService } from './parser.service'
+import { sourceService } from './source.service'
 import { slackService } from './slack.service'
 
 type SyncFile = {
@@ -35,7 +37,13 @@ async function updateSyncState(
     })
 }
 
-async function processSingleResume(userId: string, file: SyncFile, roleName: string) {
+async function processSingleResume(
+  userId: string,
+  file: SyncFile,
+  roleName: string,
+  sourceName: string,
+  importBatchId?: string
+) {
   const existing = await candidateService.getByDriveFileId(userId, file.fileId)
 
   if (file.mimeType !== 'application/pdf') {
@@ -52,12 +60,21 @@ async function processSingleResume(userId: string, file: SyncFile, roleName: str
     userId,
     companyId: owner?.companyId || null,
     role: roleName,
+    source: sourceName,
     name: parsed.name,
     candidateEmail: parsed.email,
     phone: parsed.phone,
     resumeUrl: file.webViewLink,
     driveFileId: file.fileId,
-    parsedData: parsed.sections,
+    parsedData: {
+      ...parsed.sections,
+      importMetadata: {
+        importMethod: 'google_drive',
+        importBatchId,
+        sourceName,
+        originalFilename: file.name,
+      },
+    },
     atsScore: parsed.atsScore,
   }
 
@@ -67,7 +84,16 @@ async function processSingleResume(userId: string, file: SyncFile, roleName: str
       candidateEmail: parsed.email || undefined,
       phone: parsed.phone || undefined,
       resumeUrl: file.webViewLink,
-      parsedData: parsed.sections,
+      source: sourceName,
+      parsedData: {
+        ...parsed.sections,
+        importMetadata: {
+          importMethod: 'google_drive',
+          importBatchId,
+          sourceName,
+          originalFilename: file.name,
+        },
+      },
       atsScore: parsed.atsScore,
     })
     return
@@ -110,6 +136,55 @@ export const syncService = {
       totalFailed: 0,
     },
 
+  validateDriveStructure: async (userId: string) => {
+    const driveConfig = await driveService.getDriveConfig(userId)
+    if (!driveConfig?.driveFolderId) {
+      throw new AppError('Drive not configured', 400)
+    }
+
+    const importFolders = await driveService.scanImportFolders(
+      userId,
+      driveConfig.driveFolderId
+    )
+
+    const issues: Array<{ type: string; message: string }> = []
+    if (importFolders.length === 0) {
+      issues.push({
+        type: 'missing_import_folders',
+        message: 'No role/source folders were found under rules/.',
+      })
+    }
+
+    const legacyFolders = importFolders.filter(
+      (folder) => folder.sourceName === 'drive-import'
+    )
+    if (legacyFolders.length > 0) {
+      issues.push({
+        type: 'legacy_role_folder',
+        message:
+          'Some role folders contain resumes directly. Move resumes into source folders like on-campus or referral.',
+      })
+    }
+
+    const folders = await Promise.all(
+      importFolders.map(async (folder) => {
+        const files = await driveService.getFilesInFolder(userId, folder.folderId)
+        return {
+          roleName: folder.roleName,
+          sourceName: folder.sourceName,
+          sourceFolderName: folder.sourceFolderName,
+          resumeCount: files.length,
+        }
+      })
+    )
+
+    return {
+      valid: issues.length === 0,
+      issues,
+      folders,
+    }
+  },
+
   runDriveSync: async (userId: string) => {
     await updateSyncState(userId, {
       isSyncRunning: true,
@@ -125,23 +200,50 @@ export const syncService = {
         throw new AppError('Drive not configured', 400)
       }
 
-      const roleFolders = await driveService.scanRoleFolders(
+      const importFolders = await driveService.scanImportFolders(
         userId,
         driveConfig.driveFolderId
       )
+      const owner = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      })
+      const importBatch = await importBatchService.create({
+        companyId: owner?.companyId || null,
+        userId,
+        importMethod: 'google_drive',
+        status: 'importing',
+        totalFiles: 0,
+      })
 
       let totalProcessed = 0
       let totalFailed = 0
+      let totalFiles = 0
       const seenDriveFileIds: string[] = []
 
-      for (const roleFolder of roleFolders) {
-        const files = await driveService.getFilesInFolder(userId, roleFolder.folderId)
+      for (const importFolder of importFolders) {
+        if (owner?.companyId) {
+          await sourceService.create(owner.companyId, userId, {
+            name: importFolder.sourceFolderName,
+          })
+        }
+
+        const files = await driveService.getFilesInFolder(userId, importFolder.folderId)
+        totalFiles += files.length
+        await importBatchService.update(importBatch.id, { totalFiles })
         seenDriveFileIds.push(...files.map((file) => file.fileId))
 
         for (let index = 0; index < files.length; index += config.sync.batchSize) {
-          const batch = files.slice(index, index + config.sync.batchSize)
+          const fileBatch = files.slice(index, index + config.sync.batchSize)
           const results = await Promise.allSettled(
-            batch.map((file) => processSingleResume(userId, file, roleFolder.name))
+            fileBatch.map((file) =>
+              processSingleResume(
+                userId,
+                file,
+                importFolder.roleName,
+                importFolder.sourceName,
+                importBatch.id
+              )
+            )
           )
 
           for (const result of results) {
@@ -157,6 +259,11 @@ export const syncService = {
             isSyncRunning: true,
             totalProcessed,
             totalFailed,
+          })
+          await importBatchService.update(importBatch.id, {
+            totalFiles,
+            successfulCount: totalProcessed,
+            failedCount: totalFailed,
           })
 
           await new Promise((resolve) =>
@@ -181,6 +288,12 @@ export const syncService = {
         lastSyncCompletedAt: new Date(),
         totalProcessed,
         totalFailed,
+      })
+      await importBatchService.update(importBatch.id, {
+        status: totalFailed > 0 ? 'completed_with_errors' : 'completed',
+        totalFiles,
+        successfulCount: totalProcessed,
+        failedCount: totalFailed,
       })
 
       await db

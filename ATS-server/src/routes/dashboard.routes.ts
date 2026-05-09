@@ -6,5 +6,6 @@ const router = Router()
 
 router.use(authMiddleware)
 router.get('/activity', dashboardController.getActivity)
+router.get('/actions', dashboardController.getActions)
 
 export { router as dashboardRoutes }

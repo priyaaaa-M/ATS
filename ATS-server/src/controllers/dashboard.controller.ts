@@ -10,4 +10,13 @@ export const dashboardController = {
       return next(err)
     }
   },
+
+  getActions: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await dashboardService.getActions(req.session.userId!)
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
 }

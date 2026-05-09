@@ -8,6 +8,7 @@ const router = Router()
 router.use(authMiddleware)
 router.use(requireRole('hr'))
 router.post('/drive', syncController.syncDrive)
+router.get('/drive/validate', syncController.validateDrive)
 router.get('/status', syncController.getStatus)
 
 export { router as syncRoutes }

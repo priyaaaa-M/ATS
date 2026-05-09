@@ -14,6 +14,13 @@ const upload = multer({
 })
 
 router.post(
+  '/preview',
+  authMiddleware,
+  upload.array('resumes', 50),
+  asyncHandler(uploadController.previewBulkUpload)
+)
+
+router.post(
   '/bulk',
   authMiddleware,
   upload.array('resumes', 50),

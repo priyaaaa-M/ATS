@@ -15,6 +15,10 @@ function normalizeRoleName(name: string) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+function normalizeSourceName(name: string) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
 async function getAuthedDrive(userId: string) {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
@@ -119,6 +123,48 @@ export const driveService = {
     })
 
     return result
+  },
+
+  scanImportFolders: async (userId: string, rootFolderId: string) => {
+    const drive = await getAuthedDrive(userId)
+    const roleFolders = await driveService.scanRoleFolders(userId, rootFolderId)
+    const imports: Array<{
+      roleName: string
+      sourceName: string
+      folderId: string
+      sourceFolderName: string
+    }> = []
+
+    for (const roleFolder of roleFolders) {
+      const sourceFolders = await drive.files.list({
+        q: `'${roleFolder.folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+        fields: 'files(id,name)',
+        pageSize: 500,
+      })
+
+      const folders = sourceFolders.data.files || []
+      if (folders.length === 0) {
+        imports.push({
+          roleName: roleFolder.name,
+          sourceName: 'drive-import',
+          folderId: roleFolder.folderId,
+          sourceFolderName: 'Drive Import',
+        })
+        continue
+      }
+
+      for (const folder of folders) {
+        if (!folder.id) continue
+        imports.push({
+          roleName: roleFolder.name,
+          sourceName: normalizeSourceName(folder.name || 'unnamed-source'),
+          folderId: folder.id,
+          sourceFolderName: folder.name || 'Unnamed source',
+        })
+      }
+    }
+
+    return imports
   },
 
   getFilesInFolder: async (userId: string, folderId: string) => {

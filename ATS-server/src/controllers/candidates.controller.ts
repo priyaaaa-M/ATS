@@ -6,13 +6,14 @@ import { AppError } from '../types'
 export const candidatesController = {
   list: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { role, status, search, min_ats_score, round, inboxStatus } = req.query
+      const { role, source, status, search, min_ats_score, round, inboxStatus } = req.query
       const candidates = await candidateService.list({
         userId: req.session.userId!,
         userRole: req.session.userRole as 'hr' | 'interviewer',
         userEmail: req.session.userEmail!,
         filters: {
           role: role as string | undefined,
+          source: source as string | undefined,
           status: status as string | undefined,
           inboxStatus: inboxStatus as string | undefined,
           search: search as string | undefined,
