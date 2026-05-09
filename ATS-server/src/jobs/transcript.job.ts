@@ -7,6 +7,10 @@ import { scheduledInterviews } from '../db/schema'
 import { readaiService } from '../services/readai.service'
 
 async function checkPendingTranscripts() {
+  if (!config.readai.apiKey) {
+    return
+  }
+
   console.log('[TRANSCRIPT JOB] Checking pending transcripts...')
 
   const now = new Date()
@@ -44,6 +48,11 @@ async function checkPendingTranscripts() {
 }
 
 export function startTranscriptJob() {
+  if (!config.readai.apiKey) {
+    console.log('[TRANSCRIPT JOB] Skipped - READAI_API_KEY is not configured')
+    return
+  }
+
   cron.schedule(config.jobs.transcriptCron, checkPendingTranscripts)
   console.log('[TRANSCRIPT JOB] Started')
 }

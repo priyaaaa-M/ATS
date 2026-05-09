@@ -43,6 +43,34 @@ export interface CandidateNote {
   isPrivate?: boolean
 }
 
+export interface AiMeetingDebrief {
+  summary: string
+  facts: {
+    skillsMentioned: string[]
+    experienceSignals: string[]
+    salaryExpectation: string
+    noticePeriod: string
+    locationPreference: string
+    availability: string
+  }
+  strengths: Array<{
+    point: string
+    evidence: string
+  }>
+  risks: Array<{
+    point: string
+    evidence: string
+    severity: 'low' | 'medium' | 'high'
+  }>
+  missingInfo: string[]
+  recommendation: {
+    decision: 'strong_yes' | 'yes' | 'maybe' | 'no'
+    confidence: 'low' | 'medium' | 'high'
+    reason: string
+  }
+  privateNote: string
+}
+
 export interface CandidateActivity {
   id: string
   type: 'status_change' | 'note_added' | 'interview_scheduled' | 'feedback_submitted' | 'system'

@@ -60,6 +60,11 @@ export const config = {
   slack: {
     webhookUrl: optional('SLACK_WEBHOOK_URL'),
   },
+  ai: {
+    groqApiKey: optional('GROQ_API_KEY'),
+    groqBaseUrl: optional('GROQ_BASE_URL'),
+    groqModel: optional('GROQ_MODEL', 'openai/gpt-oss-20b'),
+  },
   readai: {
     apiKey: optional('READAI_API_KEY'),
     webhookSecret: optional('READAI_WEBHOOK_SECRET'),

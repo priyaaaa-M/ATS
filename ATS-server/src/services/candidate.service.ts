@@ -11,6 +11,7 @@ import {
 import crypto from 'crypto'
 import { z } from 'zod'
 import { db } from '../db'
+import { config } from '../config'
 import {
   candidates,
   interviewFeedback,
@@ -62,6 +63,121 @@ const addNoteSchema = z.object({
   text: z.string().min(1),
   isPrivate: z.boolean().optional(),
 })
+
+const draftNoteSchema = z.object({
+  userId: z.string().uuid(),
+  userRole: z.enum(['hr', 'interviewer']),
+  userEmail: z.string().email(),
+  rawNotes: z.string().trim().min(10).max(8000),
+  noteType: z.enum(['general', 'screening', 'technical', 'culture', 'compensation']).optional().default('general'),
+})
+
+const aiMeetingDebriefSchema = z.object({
+  summary: z.string().min(1),
+  facts: z.object({
+    skillsMentioned: z.array(z.string()).default([]),
+    experienceSignals: z.array(z.string()).default([]),
+    salaryExpectation: z.string().default('Not mentioned'),
+    noticePeriod: z.string().default('Not mentioned'),
+    locationPreference: z.string().default('Not mentioned'),
+    availability: z.string().default('Not mentioned'),
+  }),
+  strengths: z
+    .array(
+      z.object({
+        point: z.string().min(1),
+        evidence: z.string().min(1),
+      })
+    )
+    .default([]),
+  risks: z
+    .array(
+      z.object({
+        point: z.string().min(1),
+        evidence: z.string().min(1),
+        severity: z.enum(['low', 'medium', 'high']),
+      })
+    )
+    .default([]),
+  missingInfo: z.array(z.string()).default([]),
+  recommendation: z.object({
+    decision: z.enum(['strong_yes', 'yes', 'maybe', 'no']),
+    confidence: z.enum(['low', 'medium', 'high']),
+    reason: z.string().min(1),
+  }),
+  privateNote: z.string().min(1),
+})
+
+function parseAiJsonObject(text: string) {
+  const trimmed = text.trim()
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  let jsonText = fenced?.[1]?.trim() ?? trimmed
+  const firstBrace = jsonText.indexOf('{')
+  const lastBrace = jsonText.lastIndexOf('}')
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    jsonText = jsonText.slice(firstBrace, lastBrace + 1)
+  }
+  return JSON.parse(jsonText)
+}
+
+const debriefShapeExample = {
+  summary: 'string',
+  facts: {
+    skillsMentioned: ['string'],
+    experienceSignals: ['string'],
+    salaryExpectation: 'Not mentioned',
+    noticePeriod: 'Not mentioned',
+    locationPreference: 'Not mentioned',
+    availability: 'Not mentioned',
+  },
+  strengths: [{ point: 'string', evidence: 'string' }],
+  risks: [{ point: 'string', evidence: 'string', severity: 'low | medium | high' }],
+  missingInfo: ['string'],
+  recommendation: { decision: 'strong_yes | yes | maybe | no', confidence: 'low | medium | high', reason: 'string' },
+  privateNote: 'string',
+}
+
+async function parseOrRepairDebrief({
+  text,
+  generateText,
+  model,
+}: {
+  text: string
+  generateText: typeof import('ai').generateText
+  model: Parameters<typeof import('ai').generateText>[0]['model']
+}) {
+  try {
+    return aiMeetingDebriefSchema.parse(parseAiJsonObject(text))
+  } catch {
+    const repaired = await generateText({
+      model,
+      temperature: 0,
+      maxOutputTokens: 1800,
+      system: 'Return only valid JSON. No markdown, no comments, no explanation.',
+      prompt: [
+        'Repair this malformed JSON into valid JSON matching exactly this shape:',
+        JSON.stringify(debriefShapeExample),
+        '',
+        'Malformed JSON:',
+        text,
+      ].join('\n'),
+    })
+
+    try {
+      return aiMeetingDebriefSchema.parse(parseAiJsonObject(repaired.text))
+    } catch {
+      throw new AppError('The AI summary was incomplete. Please try Generate summary again.', 502)
+    }
+  }
+}
+
+function normalizeGroqBaseUrl(value: string) {
+  const baseUrl = value.trim().replace(/\/$/, '')
+  if (!baseUrl) return undefined
+  if (baseUrl === 'https://api.groq.com') return 'https://api.groq.com/openai/v1'
+  if (baseUrl === 'https://api.groq.com/v1') return 'https://api.groq.com/openai/v1'
+  return baseUrl
+}
 
 const saveScorecardSchema = z.object({
   userId: z.string().uuid(),
@@ -864,6 +980,81 @@ export const candidateService = {
       authorName: payload.userEmail,
       isPrivate: payload.isPrivate ?? true,
       createdAt: created.createdAt,
+    }
+  },
+
+  draftMeetingNote: async (candidateId: string, input: unknown) => {
+    const payload = draftNoteSchema.parse(input)
+    const candidate = await authorizeCandidate(
+      candidateId,
+      payload.userId,
+      payload.userRole,
+      payload.userEmail
+    )
+
+    if (!config.ai.groqApiKey) {
+      throw new AppError('GROQ_API_KEY is not configured', 503)
+    }
+
+    const [{ generateText }, { createGroq }] = await Promise.all([
+      import('ai'),
+      import('@ai-sdk/groq'),
+    ])
+    const groq = createGroq({
+      apiKey: config.ai.groqApiKey,
+      baseURL: normalizeGroqBaseUrl(config.ai.groqBaseUrl),
+    })
+    const parsedData = (candidate.parsedData ?? {}) as {
+      headline?: string
+      summary?: string
+      skills?: Array<{ name?: string }>
+    }
+    const skills = parsedData.skills
+      ?.map((skill) => skill.name)
+      .filter(Boolean)
+      .slice(0, 8)
+      .join(', ')
+
+    const model = groq(config.ai.groqModel)
+    const { text } = await generateText({
+      model,
+      temperature: 0.2,
+      maxOutputTokens: 1800,
+      system: [
+        'You are an evidence-first HR debrief assistant.',
+        'Use only the supplied candidate data and rough HR notes.',
+        'Do not invent facts, skills, employers, salary, notice period, location, availability, or motivation.',
+        'Use "Not mentioned" for absent fields and "Unclear" for ambiguous fields.',
+        'Every strength and risk must include short evidence from the supplied input.',
+        'Keep recommendation conservative and based only on listed evidence.',
+        'Return only valid JSON. Do not wrap it in markdown.',
+      ].join(' '),
+      prompt: [
+        `Candidate: ${candidate.name || candidate.candidateEmail}`,
+        `Role: ${candidate.role}`,
+        parsedData.headline ? `Headline: ${parsedData.headline}` : '',
+        parsedData.summary ? `Resume summary: ${parsedData.summary}` : '',
+        skills ? `Known skills: ${skills}` : '',
+        '',
+        'Return JSON with this exact shape:',
+        JSON.stringify(debriefShapeExample),
+        '',
+        `Debrief type: ${payload.noteType}`,
+        'Private note should be concise and suitable to save inside the ATS after the session.',
+        'Do not write questions or coaching prompts. This is a post-session structured summary, not a live interview script.',
+        'When evidence is missing, say Not mentioned. When evidence is ambiguous, say Unclear.',
+        '',
+        'Rough HR meeting notes:',
+        payload.rawNotes,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    })
+    const debrief = await parseOrRepairDebrief({ text, generateText, model })
+
+    return {
+      debrief,
+      model: config.ai.groqModel,
     }
   },
 

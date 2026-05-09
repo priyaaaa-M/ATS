@@ -200,6 +200,21 @@ export const candidatesController = {
     }
   },
 
+  draftMeetingNote: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await candidateService.draftMeetingNote(req.params.id, {
+        userId: req.session.userId!,
+        userRole: req.session.userRole as 'hr' | 'interviewer',
+        userEmail: req.session.userEmail!,
+        rawNotes: req.body?.rawNotes,
+        noteType: req.body?.noteType,
+      })
+      return res.json(result)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
   getScorecard: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await candidateService.getScorecard(

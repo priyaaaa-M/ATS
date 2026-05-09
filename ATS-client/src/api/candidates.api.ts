@@ -1,4 +1,4 @@
-import type { Candidate, CandidateActivity, CandidateNote, Scorecard } from '../types'
+import type { AiMeetingDebrief, Candidate, CandidateActivity, CandidateNote, Scorecard } from '../types'
 import { api } from './client'
 
 export const candidatesApi = {
@@ -22,6 +22,8 @@ export const candidatesApi = {
   getActivity: (id: string) => api.get<CandidateActivity[]>(`/api/candidates/${id}/activity`).then((r) => r.data),
   getNotes: (id: string) => api.get<CandidateNote[]>(`/api/candidates/${id}/notes`).then((r) => r.data),
   addNote: (id: string, data: { text: string; isPrivate?: boolean }) => api.post(`/api/candidates/${id}/notes`, data).then((r) => r.data),
+  draftMeetingNote: (id: string, data: { rawNotes: string; noteType?: string }) =>
+    api.post<{ debrief: AiMeetingDebrief; model: string }>(`/api/candidates/${id}/notes/ai-draft`, data).then((r) => r.data),
   getScorecard: (id: string) => api.get<Scorecard | null>(`/api/candidates/${id}/scorecard`).then((r) => r.data),
   saveScorecard: (id: string, data: { criteria: Array<{ questionId: string; value: 'yes' | 'no' | 'unknown' }>; overallFit: string }) =>
     api.post(`/api/candidates/${id}/scorecard`, data).then((r) => r.data),
