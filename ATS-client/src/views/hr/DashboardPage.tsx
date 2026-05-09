@@ -29,12 +29,23 @@ export function DashboardPage() {
       <PageHeader title="Dashboard" description="A quick pulse on pipeline health and recent movement." />
       <motion.div className="grid gap-4 lg:grid-cols-4" initial="hidden" animate="show" variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}>
         {stats.map((stat) => (
-          <motion.div key={stat.label} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+          <motion.div 
+            key={stat.label} 
+            variants={{ 
+              hidden: { opacity: 0, y: 12 }, 
+              show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.25, 1, 0.5, 1] } } 
+            }}
+          >
             <Card><CardContent className="flex items-center justify-between pt-5"><div><p className="text-[32px] font-semibold text-[var(--brand)]">{stat.value}</p><p className="text-[13px] text-[var(--text-2)]">{stat.label}</p></div><stat.icon className="h-5 w-5 text-[var(--text-3)]" /></CardContent></Card>
           </motion.div>
         ))}
       </motion.div>
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <motion.div 
+        className="grid gap-6 lg:grid-cols-[1.5fr_1fr]"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.08, ease: [0.25, 1, 0.5, 1] }}
+      >
         <Card>
           <CardContent className="pt-5">
             <p className="mb-4 text-sm font-semibold">Upcoming Interviews</p>
@@ -73,7 +84,7 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
     </div>
   )
 }

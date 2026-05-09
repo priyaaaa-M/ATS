@@ -23,21 +23,22 @@ import {
 import { Textarea } from '../../components/ui/textarea'
 import { hexToHsl } from '../../lib/utils'
 
-const defaultForm = {
-  name: '',
-  website: '',
-  industry: '',
-  size: '',
-  description: '',
-  brandColor: '#EC5B24',
-  logoUrl: '',
-}
+import { useAuthStore } from '../../store/authStore'
 
 export function CompanyProfileTab() {
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const colorInputRef = useRef<HTMLInputElement | null>(null)
-  const [form, setForm] = useState(defaultForm)
+  
+  const [form, setForm] = useState(() => ({
+    name: '',
+    website: '',
+    industry: '',
+    size: '',
+    description: '',
+    brandColor: useAuthStore.getState().company?.brandColor || '#EC5B24',
+    logoUrl: '',
+  }))
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['company-profile'],

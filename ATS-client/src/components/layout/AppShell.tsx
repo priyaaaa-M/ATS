@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useCompanyBrand } from '../../hooks/useCompanyBrand'
 import { useThemeMode } from '../../hooks/useThemeMode'
@@ -7,10 +7,12 @@ import { useRoles } from '../../hooks/useRoles'
 import { useLayoutStore } from '../../store/layoutStore'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export function AppShell() {
   useCompanyBrand()
   useThemeMode()
+  const location = useLocation()
   const { data: candidates = [] } = useCandidates({})
   const { data: roles = [] } = useRoles()
   const openRoles = roles.filter((role) => role.status === 'open').length
@@ -45,7 +47,18 @@ export function AppShell() {
       <div className="min-w-0 flex-1 h-screen overflow-y-auto">
         <TopBar />
         <main className="min-h-0 p-6">
-          <Outlet />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full h-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

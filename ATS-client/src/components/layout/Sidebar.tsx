@@ -22,11 +22,11 @@ export function Sidebar({ candidateCount = 0, openRoles = 0 }: { candidateCount?
       ]
 
   return (
-    <aside style={{ width: sidebarWidth }} className="flex h-screen flex-col bg-[var(--bg-sidebar)] px-4 py-5 text-[var(--text-sb)] shadow-[inset_-1px_0_0_0_rgba(255,255,255,0.04)]">
+    <aside style={{ width: sidebarWidth }} className="flex h-screen flex-col bg-[var(--bg-sidebar)] px-4 py-5 text-[var(--text-sb)] border-r border-[var(--border-sb)]">
       <div className="mb-8 flex items-center gap-3 px-2">
         <Avatar name={company?.name} imageUrl={company?.logoUrl} size="md" className="h-10 w-10 text-[11px]" />
         <div>
-          <p className="text-[14px] font-semibold text-white">{company?.name ?? 'ATS Company'}</p>
+          <p className="text-[14px] font-semibold text-[var(--text-sb-act)]">{company?.name ?? 'ATS Company'}</p>
           <p className="text-[11px] text-[var(--text-sb)]">ATS Platform</p>
         </div>
       </div>
@@ -38,29 +38,29 @@ export function Sidebar({ candidateCount = 0, openRoles = 0 }: { candidateCount?
             className={({ isActive }) =>
               `flex h-11 items-center gap-[10px] rounded-[12px] border-l-[3px] px-3.5 text-[15px] transition ${
                 isActive
-                  ? 'border-[var(--brand)] bg-[var(--bg-sidebar-act)] font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.03)]'
-                  : 'border-transparent hover:bg-[#252528]'
+                  ? 'border-[var(--brand)] bg-[var(--bg-sidebar-act)] font-semibold text-[var(--text-sb-act)] shadow-[0_0_0_1px_rgba(255,255,255,0.01)]'
+                  : 'border-transparent text-[var(--text-sb)] hover:bg-[var(--bg-sidebar-hover)]'
               }`
             }
           >
             <Icon className="h-4 w-4" />
             {label}
             {typeof count === 'number' ? (
-              <span className="ml-auto rounded-full bg-[var(--brand)] px-[5px] py-[2px] text-[9px] text-white">{count}</span>
+              <span className="ml-auto rounded-full bg-[var(--brand)] px-[5px] py-[2px] text-[9px] text-white font-bold">{count}</span>
             ) : null}
           </NavLink>
         ))}
       </nav>
       <div className="mt-auto border-t border-[var(--border-sb)] pt-4">
-        <div className="flex items-center gap-3 rounded-[12px] bg-[rgba(255,255,255,0.02)] px-3 py-3">
+        <div className="flex items-center gap-3 rounded-[12px] bg-[var(--bg-sidebar-hover)] px-3 py-3 border border-[var(--border-sb)]">
           <Avatar name={user?.name} size="sm" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] text-white">{user?.name}</p>
+            <p className="truncate text-[13px] text-[var(--text-sb-act)] font-semibold">{user?.name}</p>
             <p className="truncate text-[11px] text-[var(--text-sb)] capitalize">{user?.role?.replace('_', ' ')}</p>
           </div>
           <button
             onClick={() => authApi.logout().finally(logout)}
-            className="text-[var(--text-sb)]"
+            className="text-[var(--text-sb)] hover:text-[var(--text-sb-act)] transition"
           >
             <LogOut className="h-4 w-4" />
           </button>

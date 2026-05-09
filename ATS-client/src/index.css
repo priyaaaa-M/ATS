@@ -35,7 +35,7 @@
   --color-ring: var(--ring);
 }
 
-/* Light (default) palette – black background, orange accent */
+/* Light (default) palette – clean white background, orange accent */
 :root {
   --radius: 0.75rem;
 
@@ -44,27 +44,46 @@
   --brand-light: oklch(0.90 0.10 35);
   --brand-mid: oklch(0.75 0.20 35);
 
-  /* Core UI */
-  --background: oklch(0.12 0 0);          /* deep black */
-  --foreground: oklch(0.95 0 0);          /* near‑white */
-  --border: oklch(0.25 0 0);              /* dark grey */
-  --ring: oklch(0.40 0.12 35);           /* subtle orange ring */
+  /* Core UI (Light Mode) */
+  --background: oklch(0.98 0.002 30);     /* clean near-white background */
+  --foreground: oklch(0.12 0 0);          /* deep dark-charcoal text */
+  --border: oklch(0.88 0 0);              /* light grey border */
+  --ring: oklch(0.65 0.22 35);            /* brand focus ring */
+
+  /* Sidebar (Light Mode) */
+  --bg-sidebar: oklch(0.97 0.002 30);      /* clean soft light grey background */
+  --text-sb: oklch(0.48 0 0);              /* professional dark grey text */
+  --text-sb-act: oklch(0.15 0 0);          /* active bold text */
+  --bg-sidebar-act: oklch(0.92 0.002 30);  /* soft grey active container */
+  --bg-sidebar-hover: oklch(0.94 0.002 30);/* soft hover background */
+  --border-sb: oklch(0.88 0 0);            /* light grey divider */
 
   /* Semantic */
   --primary: var(--brand);
   --primary-foreground: var(--brand-light);
-  --muted: oklch(0.20 0 0);
-  --muted-foreground: oklch(0.60 0 0);
-  --destructive: oklch(0.55 0.25 20);    /* reddish‑orange for errors */
+  --muted: oklch(0.95 0 0);               /* light grey muted bg */
+  --muted-foreground: oklch(0.45 0 0);     /* mid grey muted text */
+  --destructive: oklch(0.55 0.25 20);    /* error red/orange */
   --destructive-foreground: var(--brand-light);
 }
 
-/* Dark mode – reverse contrast while retaining orange accent */
-.dark {
-  --background: oklch(0.92 0 0);          /* light gray for dark‑mode background */
-  --foreground: oklch(0.15 0 0);          /* dark text */
-  --border: oklch(0.80 0 0);
-  --ring: oklch(0.70 0.12 35);
+/* Dark mode – premium black background, white text, orange accent */
+.dark, [data-theme='dark'] {
+  --background: oklch(0.12 0 0);          /* deep black background */
+  --foreground: oklch(0.95 0 0);          /* near‑white text */
+  --border: oklch(0.25 0 0);              /* dark grey border */
+  --ring: oklch(0.40 0.12 35);            /* subtle orange ring */
+
+  /* Sidebar (Dark Mode) */
+  --bg-sidebar: oklch(0.10 0 0);           /* deep black sidebar */
+  --text-sb: oklch(0.68 0 0);              /* soft white-grey text */
+  --text-sb-act: oklch(0.98 0 0);          /* bold active white text */
+  --bg-sidebar-act: oklch(0.16 0 0);       /* dark grey active container */
+  --bg-sidebar-hover: oklch(0.18 0 0);     /* slightly lighter dark hover */
+  --border-sb: rgba(255, 255, 255, 0.05);  /* dark subtle divider */
+
+  --muted: oklch(0.20 0 0);               /* dark grey muted bg */
+  --muted-foreground: oklch(0.60 0 0);     /* soft grey muted text */
 }
 
 @layer base {
