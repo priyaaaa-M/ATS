@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
-import { Loader2, Search, Users, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Search, Users, MoreVertical, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { candidatesApi, rolesApi, roundsApi } from '../../api'
 import { CandidateSlidePanel } from '../../components/candidates/CandidateSlidePanel'
+import { BulkUploadModal } from '../../components/candidates/BulkUploadModal'
 import { PipelineBoard } from '../../components/pipeline/PipelineBoard'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -34,6 +35,7 @@ export function CandidatesPage() {
   const [pipelineRole, setPipelineRole] = useState('')
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
 
   const filters = useMemo(
     () => ({ activeStatus: statusFilter, activeRole: roleFilter, search }),
@@ -174,6 +176,15 @@ export function CandidatesPage() {
               className="h-10 w-full lg:w-64 pl-9 text-sm bg-transparent border-border rounded-xl focus-visible:ring-brand/30"
             />
           </div>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setBulkUploadOpen(true)}
+            className="h-10 rounded-xl border-border hover:bg-muted text-sm px-4"
+          >
+            <Upload className="w-3.5 h-3.5 mr-1.5"/>
+            Bulk Upload
+          </Button>
           <Button size="sm" className="h-10 rounded-xl btn-primary-glow px-4 flex-shrink-0">
             + Add Candidate
           </Button>
@@ -361,6 +372,12 @@ export function CandidatesPage() {
         selectedIndex={selectedIndex}
         setSelectedIndex={setSelectedIndex}
         filters={filters}
+      />
+
+      <BulkUploadModal
+        open={bulkUploadOpen}
+        onClose={() => setBulkUploadOpen(false)}
+        roles={roles}
       />
     </div>
   )
