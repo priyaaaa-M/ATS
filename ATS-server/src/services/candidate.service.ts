@@ -314,6 +314,7 @@ async function authorizeCandidate(
 
 function getInboxStatus(status?: string | null) {
   if (status === 'rejected') return 'rejected'
+  if (status === 'maybe_later') return 'paused'
   if (status === 'pending') return 'inbox'
   return 'pipeline'
 }
@@ -453,6 +454,7 @@ export const candidateService = {
     return {
       inbox: rows.filter((candidate) => candidate.inboxStatus === 'inbox').length,
       pipeline: rows.filter((candidate) => candidate.inboxStatus === 'pipeline').length,
+      paused: rows.filter((candidate) => candidate.inboxStatus === 'paused').length,
       all: rows.length,
     }
   },
@@ -781,6 +783,19 @@ export const candidateService = {
 
     if (payload.action === 'interview') {
       return candidateService.approve(candidateId, candidate.userId)
+    }
+
+    if (payload.action === 'maybe_later') {
+      const [updated] = await db
+        .update(candidates)
+        .set({
+          status: 'maybe_later',
+          updatedAt: new Date(),
+        })
+        .where(eq(candidates.id, candidateId))
+        .returning()
+
+      return serializeCandidate(updated)
     }
 
     const [updated] = await db
