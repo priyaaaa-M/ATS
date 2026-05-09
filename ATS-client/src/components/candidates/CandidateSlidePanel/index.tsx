@@ -60,6 +60,16 @@ function getDriveEmbedUrl(url: string) {
   return url
 }
 
+const pdfViewerFragment = 'toolbar=0&navpanes=0&scrollbar=1&pagemode=none&view=FitH&zoom=page-width'
+
+function getResumeDisplayUrl(candidate: Candidate | null) {
+  if (!candidate?.resumeUrl) return ''
+  if (candidate.resumeUrl.includes('/file/')) {
+    return `${candidatesApi.getResumeUrl(candidate.id)}#${pdfViewerFragment}`
+  }
+  return getDriveEmbedUrl(candidate.resumeUrl)
+}
+
 const decisionLabels: Record<AiMeetingDebrief['recommendation']['decision'], string> = {
   strong_yes: 'Strong Yes',
   yes: 'Yes',
@@ -137,7 +147,7 @@ export function CandidateSlidePanel({
   const isInterviewer = user?.role === 'interviewer'
   const [activeTab, setActiveTab] = useState(initialTab || 'overview')
   const [panelWidth, setPanelWidth] = useState(720)
-  const [zoom, setZoom] = useState(100)
+  const resumeDisplayUrl = useMemo(() => getResumeDisplayUrl(candidate), [candidate])
   const [showRejectDropdown, setShowRejectDropdown] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [noteText, setNoteText] = useState('')
@@ -548,7 +558,7 @@ export function CandidateSlidePanel({
             ))}
           </TabsList>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          <div className={cn('min-h-0 flex-1', activeTab === 'resume' ? 'overflow-hidden p-4' : 'overflow-y-auto p-5')}>
             <TabsContent value="overview" className="mt-0">
               <div className="grid gap-5 lg:grid-cols-[1.8fr_1fr]">
                 <div className="space-y-5">
@@ -591,7 +601,7 @@ export function CandidateSlidePanel({
                     <div className="border-t border-border pt-2">
                       <p className="text-xs text-muted-foreground">Submitted: {format(new Date(candidate.createdAt), 'MMM d, yyyy · h:mm a')}</p>
                     </div>
-                    {candidate.resumeUrl && <a href={candidate.resumeUrl} target="_blank" className="flex items-center gap-1 text-sm text-primary hover:underline"><Download className="h-3.5 w-3.5" />Download Resume</a>}
+                    {candidate.resumeUrl && <a href={resumeDisplayUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-sm text-primary hover:underline"><Download className="h-3.5 w-3.5" />Download Resume</a>}
                   </div>
 
                   <div className="rounded-lg border border-border p-4">
@@ -654,17 +664,21 @@ export function CandidateSlidePanel({
             </TabsContent>
 
             <TabsContent value="resume" className="mt-0 h-full">
-              <div className="flex h-full flex-col">
+              <div className="flex h-full min-h-0 flex-col">
                 <div className="flex flex-shrink-0 items-center justify-end gap-2 border-b border-border pb-3">
-                  <button onClick={() => setZoom((value) => Math.max(50, value - 25))} className="flex h-7 w-7 items-center justify-center rounded border border-border hover:bg-muted">-</button>
-                  <span className="w-12 text-center text-sm text-muted-foreground">{zoom}%</span>
-                  <button onClick={() => setZoom((value) => Math.min(200, value + 25))} className="flex h-7 w-7 items-center justify-center rounded border border-border hover:bg-muted">+</button>
-                  {candidate.resumeUrl && <a href={candidate.resumeUrl} target="_blank" download><Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" />Download</Button></a>}
+                  {candidate.resumeUrl && <a href={resumeDisplayUrl} target="_blank" rel="noreferrer" download><Button variant="outline" size="sm"><Download className="mr-1 h-3.5 w-3.5" />Download</Button></a>}
                 </div>
-                <div className="mt-3 flex-1 overflow-auto">
-                  <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}>
-                    {candidate.resumeUrl ? <iframe src={getDriveEmbedUrl(candidate.resumeUrl)} className="w-full rounded-lg bg-white shadow-lg" style={{ height: '700px', border: 'none' }} title="Resume" /> : <div className="flex h-64 items-center justify-center text-muted-foreground"><p>No resume available</p></div>}
-                  </div>
+                <div className="mt-3 min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-white shadow-lg">
+                  {resumeDisplayUrl ? (
+                    <iframe
+                      src={resumeDisplayUrl}
+                      className="h-full w-full bg-white"
+                      style={{ border: 'none' }}
+                      title="Resume"
+                    />
+                  ) : (
+                    <div className="flex h-64 items-center justify-center bg-background text-muted-foreground"><p>No resume available</p></div>
+                  )}
                 </div>
               </div>
             </TabsContent>

@@ -1,5 +1,7 @@
 import type { NextFunction, Request, Response } from 'express'
+import { backblazeService } from '../services/backblaze.service'
 import { candidateService } from '../services/candidate.service'
+import { AppError } from '../types'
 
 export const candidatesController = {
   list: async (req: Request, res: Response, next: NextFunction) => {
@@ -77,6 +79,39 @@ export const candidatesController = {
       }
 
       return res.json(candidate)
+    } catch (err) {
+      return next(err)
+    }
+  },
+
+  getResume: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const candidate = await candidateService.getById(
+        req.params.id,
+        req.session.userId!,
+        req.session.userRole as 'hr' | 'interviewer',
+        req.session.userEmail!
+      )
+
+      if (!candidate?.resumeUrl) {
+        throw new AppError('Resume not found', 404)
+      }
+
+      const resumeUrl = candidate.resumeUrl
+      const isBackblazeUrl =
+        resumeUrl.includes('/file/') &&
+        Boolean(process.env.B2_BUCKET_NAME) &&
+        resumeUrl.includes(`/${process.env.B2_BUCKET_NAME}/`)
+
+      if (isBackblazeUrl) {
+        const signedUrl = await backblazeService.getDownloadUrlForFileUrl(
+          resumeUrl,
+          15 * 60
+        )
+        return res.redirect(signedUrl)
+      }
+
+      return res.redirect(resumeUrl)
     } catch (err) {
       return next(err)
     }

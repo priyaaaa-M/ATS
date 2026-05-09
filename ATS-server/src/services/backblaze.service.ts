@@ -329,7 +329,33 @@ export const backblazeService = {
             }
         )
 
+        if (!res.ok) {
+            const error = await res.text()
+            throw new Error(`B2 download authorization failed: ${error}`)
+        }
+
         const data = await res.json()
         return `${auth.downloadUrl}/file/${process.env.B2_BUCKET_NAME}/${fileName}?Authorization=${data.authorizationToken}`
+    },
+
+    getDownloadUrlForFileUrl: async (
+        fileUrl: string,
+        validSeconds: number = 3600
+    ): Promise<string> => {
+        const bucketName = process.env.B2_BUCKET_NAME
+        if (!bucketName) {
+            throw new Error('B2_BUCKET_NAME is not configured')
+        }
+
+        const url = new URL(fileUrl)
+        const prefix = `/file/${bucketName}/`
+        const fileIndex = url.pathname.indexOf(prefix)
+
+        if (fileIndex === -1) {
+            throw new Error('Resume URL is not a Backblaze file URL')
+        }
+
+        const fileName = decodeURIComponent(url.pathname.slice(fileIndex + prefix.length))
+        return backblazeService.getDownloadUrl(fileName, validSeconds)
     },
 }

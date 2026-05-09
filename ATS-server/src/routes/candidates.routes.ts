@@ -14,6 +14,7 @@ router.get(
   requireRole('interviewer'),
   candidatesController.approvedByInterviewer
 )
+router.get('/:id/resume', candidatesController.getResume)
 router.get('/:id', candidatesController.getById)
 router.get('/:id/activity', candidatesController.getActivity)
 router.get('/:id/notes', candidatesController.getNotes)

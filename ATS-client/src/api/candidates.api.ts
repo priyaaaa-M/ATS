@@ -3,6 +3,10 @@ import { api } from './client'
 
 export const candidatesApi = {
   list: (params?: Record<string, string | number | undefined>) => api.get<Candidate[]>('/api/candidates', { params }).then((r) => r.data),
+  getResumeUrl: (id: string) => {
+    const path = `/api/candidates/${encodeURIComponent(id)}/resume`
+    return import.meta.env.DEV ? path : `${import.meta.env.VITE_API_URL || ''}${path}`
+  },
   approvedByMe: () => api.get<Candidate[]>('/api/candidates/approved-by-me').then((r) => r.data),
   getPipeline: (role?: string) =>
     api
