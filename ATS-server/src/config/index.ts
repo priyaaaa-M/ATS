@@ -29,6 +29,7 @@ export const config = {
   port: optionalNumber('PORT', 3000),
   nodeEnv,
   isDev: nodeEnv === 'development',
+  groqApiKey: optional('GROQ_API_KEY'),
   appBaseUrl: required('APP_BASE_URL'),
   cookieName: optional('COOKIE_NAME', 'ats.sid'),
   allowedOrigins: optional(

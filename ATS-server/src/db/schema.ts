@@ -141,6 +141,7 @@ export const candidates = pgTable(
     parsedData: jsonb('parsed_data'),
     atsScore: integer('ats_score'),
     parsedSkills: jsonb('parsed_skills'),
+    source: text('source').default('drive'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

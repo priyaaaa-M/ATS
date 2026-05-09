@@ -12,6 +12,7 @@ import { roundsRoutes } from './rounds.routes'
 import { slackRoutes } from './slack.routes'
 import { syncRoutes } from './sync.routes'
 import { transcriptRoutes } from './transcript.routes'
+import { uploadRoutes } from './upload.routes'
 import { webhookRoutes } from './webhook.routes'
 
 export function registerRoutes(app: Express) {
@@ -28,5 +29,6 @@ export function registerRoutes(app: Express) {
   app.use('/api/dashboard', dashboardRoutes)
   app.use('/api/slack', slackRoutes)
   app.use('/api/sync', syncRoutes)
+  app.use('/api/upload', uploadRoutes)
   app.use('/api/webhooks', webhookRoutes)
 }
