@@ -4,20 +4,27 @@ import { startTranscriptJob } from './src/jobs/transcript.job'
 
 const app = createApp()
 
-const server = app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`)
-  console.log(`Environment: ${config.nodeEnv}`)
-  console.log(`App URL: ${config.appBaseUrl}`)
-  startTranscriptJob()
-})
-
-server.on('error', (error: NodeJS.ErrnoException) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(
-      `Port ${config.port} is already in use. Stop the other ATS server process or set PORT to a free port in ATS-server/.env.`
-    )
+function startServer(port: number, maxAttempts = 10, currentAttempt = 0) {
+  if (currentAttempt >= maxAttempts) {
+    console.error(`Could not find a free port after ${maxAttempts} attempts.`)
     process.exit(1)
   }
 
-  throw error
-})
+  const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`)
+    console.log(`Environment: ${config.nodeEnv}`)
+    console.log(`App URL: ${config.appBaseUrl}`)
+    startTranscriptJob()
+  })
+
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      console.warn(`Port ${port} is already in use. Trying port ${port + 1}...`)
+      startServer(port + 1, maxAttempts, currentAttempt + 1)
+    } else {
+      throw error
+    }
+  })
+}
+
+startServer(Number(config.port))
