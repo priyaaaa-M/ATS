@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Loader2, Search, Users, MoreVertical, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { candidatesApi, rolesApi, roundsApi, sourcesApi } from '../../api'
 import { CandidateSlidePanel } from '../../components/candidates/CandidateSlidePanel'
-import { BulkUploadModal } from '../../components/candidates/BulkUploadModal'
+import { AddCandidateModal } from '../../components/candidates/AddCandidateModal'
 import { PipelineBoard } from '../../components/pipeline/PipelineBoard'
 import { Badge } from '../../components/ui/badge'
 import { Button } from '../../components/ui/button'
@@ -38,7 +38,7 @@ export function CandidatesPage() {
   const [pipelineRole, setPipelineRole] = useState('')
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [bulkUploadOpen, setBulkUploadOpen] = useState(false)
+  const [addCandidateOpen, setAddCandidateOpen] = useState(false)
 
   useEffect(() => {
     setStatusFilter(searchParams.get('status') || 'inbox')
@@ -206,15 +206,10 @@ export function CandidatesPage() {
             />
           </div>
           <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setBulkUploadOpen(true)}
-            className="h-10 rounded-xl border-border hover:bg-muted text-sm px-4"
+            size="sm" 
+            className="h-10 rounded-xl btn-primary-glow px-4 flex-shrink-0"
+            onClick={() => setAddCandidateOpen(true)}
           >
-            <Upload className="w-3.5 h-3.5 mr-1.5"/>
-            Bulk Upload
-          </Button>
-          <Button size="sm" className="h-10 rounded-xl btn-primary-glow px-4 flex-shrink-0">
             + Add Candidate
           </Button>
         </div>
@@ -412,10 +407,9 @@ export function CandidatesPage() {
         filters={filters}
       />
 
-      <BulkUploadModal
-        open={bulkUploadOpen}
-        onClose={() => setBulkUploadOpen(false)}
-        roles={roles}
+      <AddCandidateModal
+        open={addCandidateOpen}
+        onOpenChange={setAddCandidateOpen}
       />
     </div>
   )

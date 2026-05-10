@@ -33,6 +33,14 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 }
 
 /* Base Theme Configuration (Light Mode) */
@@ -89,28 +97,28 @@
   --background: #050505;
   --foreground: #F8FAFC;
   
-  --card: #111111;
+  --card: #1a1a1a;
   --card-foreground: #F8FAFC;
   
-  --popover: #151515;
+  --popover: #222222;
   --popover-foreground: #F8FAFC;
   
   --primary: #F97316;
   --primary-foreground: #FFFFFF;
   
-  --secondary: #1A1A1A;
+  --secondary: #252525;
   --secondary-foreground: #E2E8F0;
   
   --muted: #1A1A1A;
   --muted-foreground: #888888;
   
-  --accent: #1A1A1A;
+  --accent: #252525;
   --accent-foreground: #F8FAFC;
   
   --destructive: #331111;
   --destructive-foreground: #F87171;
   
-  --border: #222222;
+  --border: #333333;
   --input: #1A1A1A;
   --ring: rgba(249, 115, 22, 0.4);
 

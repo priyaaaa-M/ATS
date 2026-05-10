@@ -1,6 +1,13 @@
 import type { Role } from '../../types'
 import { StatusBadge } from '../candidates/StatusBadge'
 import { Button } from '../ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
+import { ChevronDown } from 'lucide-react'
 
 function getPipelineWidth(role: Role) {
   const submitted = role.pipelineCounts?.submitted || 0
@@ -19,10 +26,12 @@ export function RoleCard({
   role,
   onView,
   onEditCriteria,
+  onStatusChange,
 }: {
   role: Role
   onView: () => void
   onEditCriteria: () => void
+  onStatusChange?: (status: 'open' | 'paused' | 'draft' | 'closed') => void
 }) {
   const status = role.status ?? 'open'
   const widths = getPipelineWidth(role)
@@ -43,21 +52,60 @@ export function RoleCard({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 mt-3 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-            <span className="rounded-lg bg-white/5 border border-white/10 px-2 py-1">
+            <span className="rounded-lg bg-muted border border-border px-2 py-1">
               {role.hiringManagerName || 'No hiring manager'}
             </span>
-            <span className="rounded-lg bg-white/5 border border-white/10 px-2 py-1 flex items-center gap-1">
+            <span className="rounded-lg bg-muted border border-border px-2 py-1 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-brand"></span>
               {role.screeningQuestions?.length || 0} criteria
             </span>
           </div>
         </div>
 
-        <StatusBadge status={status === 'closed' ? 'paused' : status} />
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="cursor-pointer transition-all hover:opacity-80 flex items-center gap-1 group/status">
+                <StatusBadge status={status === 'closed' ? 'paused' : status} />
+                <ChevronDown className="h-3 w-3 text-muted-foreground group-hover/status:text-brand transition-colors" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36 bg-[#1a1a1a] border-border border shadow-2xl p-1 z-[100]">
+              {(['open', 'paused', 'draft', 'closed'] as const).map((s) => (
+                <DropdownMenuItem
+                  key={s}
+                  onSelect={() => {
+                    console.log('ITEM SELECTED:', s)
+                    onStatusChange?.(s)
+                  }}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm capitalize cursor-pointer transition-colors ${
+                    status === s ? 'bg-brand/20 text-brand font-bold' : 'hover:bg-white/10'
+                  }`}
+                >
+                  {s}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {status === 'open' && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 text-[10px] bg-muted/50 hover:bg-muted text-muted-foreground"
+              onClick={() => {
+                console.log('DIRECT PAUSE CLICKED');
+                onStatusChange?.('paused');
+              }}
+            >
+              Pause
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-3 grid-cols-3 mb-6">
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+        <div className="rounded-xl border border-border bg-card p-4 text-center hover:bg-accent transition-colors">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Candidates
           </p>
@@ -65,7 +113,7 @@ export function RoleCard({
             {role.candidateCount ?? 0}
           </p>
         </div>
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+        <div className="rounded-xl border border-border bg-card p-4 text-center hover:bg-accent transition-colors">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Rounds
           </p>
@@ -73,7 +121,7 @@ export function RoleCard({
             {role.roundCount ?? role.interviewStages?.length ?? 0}
           </p>
         </div>
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center hover:bg-white/[0.04] transition-colors">
+        <div className="rounded-xl border border-border bg-card p-4 text-center hover:bg-accent transition-colors">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             Avg Score
           </p>
@@ -83,12 +131,12 @@ export function RoleCard({
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 mb-6 flex-1 flex flex-col justify-end">
+      <div className="rounded-xl border border-border bg-card p-4 mb-6 flex-1 flex flex-col justify-end">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-white">Pipeline Health</p>
         </div>
 
-        <div className="h-2 overflow-hidden rounded-full bg-white/10 shadow-inner">
+        <div className="h-2 overflow-hidden rounded-full bg-accent shadow-inner">
           <div className="flex h-full w-full">
             <div
               className="h-full bg-brand shadow-[0_0_8px_rgba(249,115,22,0.6)]"
@@ -125,7 +173,7 @@ export function RoleCard({
         <Button className="h-11 flex-1 btn-primary-glow rounded-xl" onClick={onView}>
           View Role
         </Button>
-        <Button variant="outline" className="h-11 flex-1 rounded-xl bg-white/5 hover:bg-white/10 border-white/10 text-white" onClick={onEditCriteria}>
+        <Button variant="outline" className="h-11 flex-1 rounded-xl bg-muted hover:bg-accent border-border text-white" onClick={onEditCriteria}>
           Edit Criteria
         </Button>
       </div>

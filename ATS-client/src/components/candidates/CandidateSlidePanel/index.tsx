@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown,
@@ -145,6 +146,7 @@ export function CandidateSlidePanel({
   initialTab?: string
 }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { user } = useAuthStore()
   const isInterviewer = user?.role === 'interviewer'
   const [activeTab, setActiveTab] = useState(initialTab || 'overview')
@@ -526,7 +528,7 @@ export function CandidateSlidePanel({
                 {candidateSignals.map((signal) => (
                   <span
                     key={signal.label}
-                    className="rounded-lg border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
+                    className="rounded-lg border border-border bg-muted px-2.5 py-1 text-xs text-muted-foreground"
                   >
                     <span className="text-foreground">{signal.value}</span>
                     <span className="ml-1">{signal.label}</span>
@@ -610,7 +612,7 @@ export function CandidateSlidePanel({
             )}
           </div>
 
-          <div className="mt-4 rounded-xl border border-border bg-muted/20 p-3">
+          <div className="mt-4 rounded-xl border border-border bg-muted p-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -663,7 +665,7 @@ export function CandidateSlidePanel({
             <TabsContent value="overview" className="mt-0">
               <div className="grid gap-5 lg:grid-cols-[1.8fr_1fr]">
                 <div className="space-y-5">
-                  <div className="rounded-lg border-l-4 border-teal-500 bg-teal-500/10 p-4">
+                  <div className="rounded-lg border-l-4 border-teal-500 bg-teal-500/20 p-4">
                     <p className="mb-2 text-xs font-semibold text-teal-500">Why is {candidate.name} a great fit?</p>
                     <p className="text-sm leading-relaxed text-muted-foreground">{summary}</p>
                   </div>
@@ -814,7 +816,7 @@ export function CandidateSlidePanel({
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        window.location.href = '/roles'
+                        navigate('/roles')
                       }}
                     >
                       Configure role criteria →

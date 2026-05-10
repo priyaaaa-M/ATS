@@ -3,12 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Briefcase, Plus, Filter, Search } from 'lucide-react'
+import { Briefcase, Plus, Filter, Search, Loader2 } from 'lucide-react'
 import { useRoles } from '../../hooks/useRoles'
 import { rolesApi } from '../../api'
 import { RoleCard } from '../../components/roles/RoleCard'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
+import { Label } from '../../components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -22,13 +23,42 @@ import type { Role } from '../../types'
 export function RolesPage() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { data: roles = [] } = useRoles()
+  const { data: roles = [], refetch } = useRoles()
   const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'draft' | 'paused'>('all')
   const [activeRole, setActiveRole] = useState<Role | null>(null)
   const [search, setSearch] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newRoleTitle, setNewRoleTitle] = useState('')
   const [criteria, setCriteria] = useState<
     Array<{ id?: string; question: string; type?: 'yes_no' | 'scale'; required?: boolean }>
   >([])
+
+  const createRoleMutation = useMutation({
+    mutationFn: () => rolesApi.create(newRoleTitle),
+    onSuccess: async () => {
+      toast.success('Role created successfully')
+      await queryClient.invalidateQueries({ queryKey: ['roles'] })
+      refetch()
+      setIsCreateModalOpen(false)
+      setNewRoleTitle('')
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Could not create role')
+    },
+  })
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ roleName, status }: { roleName: string; status: string }) =>
+      rolesApi.updateStatus(roleName, status),
+    onSuccess: () => {
+      toast.success('Role status updated')
+      queryClient.invalidateQueries({ queryKey: ['roles'] })
+      refetch()
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Could not update status')
+    },
+  })
 
   useEffect(() => {
     setCriteria(activeRole?.screeningQuestions || [])
@@ -79,11 +109,14 @@ export function RolesPage() {
             <Input 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-muted-foreground focus:ring-brand focus:border-brand transition-all w-64 rounded-xl" 
+              className="pl-9 bg-muted border-border text-white placeholder:text-muted-foreground focus:ring-brand focus:border-brand transition-all w-64 rounded-xl" 
               placeholder="Search roles..." 
             />
           </div>
-          <Button className="btn-primary-glow rounded-xl font-medium gap-2">
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="btn-primary-glow rounded-xl font-medium gap-2"
+          >
             <Plus className="h-4 w-4" />
             <span>New Role</span>
           </Button>
@@ -91,8 +124,8 @@ export function RolesPage() {
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-          <div className="px-3 py-1 flex items-center text-muted-foreground text-xs font-semibold uppercase tracking-widest border-r border-white/10">
+        <div className="flex items-center gap-2 bg-muted p-1 rounded-xl border border-border">
+          <div className="px-3 py-1 flex items-center text-muted-foreground text-xs font-semibold uppercase tracking-widest border-r border-border">
             <Filter className="h-3 w-3 mr-1.5" /> Filter
           </div>
           {filters.map((filter) => {
@@ -103,18 +136,18 @@ export function RolesPage() {
                 onClick={() => setActiveFilter(filter)}
                 className={`relative px-4 py-1.5 text-sm font-medium transition-all rounded-lg ${
                   activeFilter === filter
-                    ? 'text-white bg-white/10 shadow-sm'
-                    : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                    ? 'text-white bg-accent shadow-sm'
+                    : 'text-muted-foreground hover:text-white hover:bg-muted'
                 }`}
               >
                 <span className="capitalize">{filter}</span>
                 <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full ${
-                  activeFilter === filter ? 'bg-brand text-white' : 'bg-white/10'
+                  activeFilter === filter ? 'bg-brand text-white' : 'bg-accent'
                 }`}>
                   {count}
                 </span>
                 {activeFilter === filter && (
-                  <motion.div layoutId="activeFilterBg" className="absolute inset-0 bg-white/10 rounded-lg -z-10" />
+                  <motion.div layoutId="activeFilterBg" className="absolute inset-0 bg-accent rounded-lg -z-10" />
                 )}
               </button>
             )
@@ -140,11 +173,16 @@ export function RolesPage() {
                 transition={{ duration: 0.2 }}
                 className="h-full"
               >
-                <div className="glass-card h-full transition-all hover:bg-white/[0.04]">
+                <div className="glass-card h-full transition-all hover:bg-accent/80">
                   <RoleCard
                     role={role}
                     onView={() => navigate(`/roles/${encodeURIComponent(role.name)}`)}
                     onEditCriteria={() => setActiveRole(role)}
+                    onStatusChange={(status) => {
+                      console.log('CLICKED STATUS:', status, 'for', role.name)
+                      toast.info(`Updating ${role.name} to ${status}...`)
+                      updateStatusMutation.mutate({ roleName: role.name, status })
+                    }}
                   />
                 </div>
               </motion.div>
@@ -159,7 +197,7 @@ export function RolesPage() {
                 <Briefcase className="h-12 w-12 text-brand/30 mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-1">No roles found</h3>
                 <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
-                <Button variant="outline" className="mt-6 bg-white/5 border-white/10 text-white rounded-xl" onClick={() => { setSearch(''); setActiveFilter('all') }}>
+                <Button variant="outline" className="mt-6 bg-muted border-border text-white rounded-xl" onClick={() => { setSearch(''); setActiveFilter('all') }}>
                   Clear Filters
                 </Button>
               </div>
@@ -168,8 +206,49 @@ export function RolesPage() {
         </AnimatePresence>
       </motion.div>
 
+      {/* New Role Modal */}
+      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-background border-white/10 text-white glass-card">
+          <DialogHeader>
+            <DialogTitle>Create New Role</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Add a new job position to your ATS.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title" className="text-sm font-medium">Role Title</Label>
+              <Input
+                id="title"
+                placeholder="e.g. Senior Product Designer"
+                value={newRoleTitle}
+                onChange={(e) => setNewRoleTitle(e.target.value)}
+                className="bg-muted border-border text-white placeholder:text-muted-foreground focus:ring-brand focus:border-brand rounded-xl h-11"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="ghost" 
+              className="rounded-xl text-muted-foreground hover:text-white hover:bg-accent"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="btn-primary-glow rounded-xl"
+              onClick={() => createRoleMutation.mutate()}
+              disabled={!newRoleTitle.trim() || createRoleMutation.isPending}
+            >
+              {createRoleMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={Boolean(activeRole)} onOpenChange={(open) => !open && setActiveRole(null)}>
-        <DialogContent className="max-w-2xl bg-background border-white/10 text-foreground glass-card shadow-2xl">
+        <DialogContent className="max-w-2xl bg-background border-border text-foreground glass-card shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-white">{activeRole?.title || activeRole?.name}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -178,7 +257,7 @@ export function RolesPage() {
           </DialogHeader>
 
           <div className="space-y-6 my-4">
-            <div className="flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
+            <div className="flex items-center justify-between bg-muted p-4 rounded-xl border border-border">
               <div>
                 <h3 className="text-sm font-semibold text-white">Screening Criteria</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">Define what makes a good candidate</p>
@@ -204,9 +283,9 @@ export function RolesPage() {
                     initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                     animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
                     exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 group"
+                    className="flex items-center gap-3 rounded-xl border border-border bg-muted p-3 group"
                   >
-                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-white/10 text-[10px] font-bold text-muted-foreground group-hover:bg-brand group-hover:text-white transition-colors">
+                    <div className="flex items-center justify-center h-6 w-6 rounded-full bg-accent text-[10px] font-bold text-muted-foreground group-hover:bg-brand group-hover:text-white transition-colors">
                       {index + 1}
                     </div>
                     <Input
@@ -237,7 +316,7 @@ export function RolesPage() {
               </AnimatePresence>
 
               {criteria.length === 0 && (
-                <div className="py-8 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+                <div className="py-8 text-center border border-dashed border-border rounded-xl bg-card">
                   <p className="text-sm text-muted-foreground">
                     No screening criteria yet. Add criteria to enable scorecards for this role.
                   </p>
@@ -246,8 +325,8 @@ export function RolesPage() {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-white/10 pt-4 mt-2">
-            <Button variant="ghost" className="rounded-xl text-muted-foreground hover:text-white hover:bg-white/10" onClick={() => setActiveRole(null)}>
+          <DialogFooter className="border-t border-border pt-4 mt-2">
+            <Button variant="ghost" className="rounded-xl text-muted-foreground hover:text-white hover:bg-accent" onClick={() => setActiveRole(null)}>
               Cancel
             </Button>
             <Button

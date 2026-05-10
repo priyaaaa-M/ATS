@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, isAfter, isBefore, startOfDay } from 'date-fns'
 import { useEffect, useMemo, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { interviewsApi, roundsApi } from '../../../api'
 import { useFreeSlots } from '../../../hooks/useFreeSlots'
@@ -107,7 +108,15 @@ export function BookSlotTab({
         {isBefore(date, startOfDay(new Date())) ? (
           <p className="text-sm text-muted-foreground">Past dates cannot be booked. Please choose today or a future day.</p>
         ) : null}
-        <SlotTimeline busy={query.data?.busy ?? []} free={filteredFree} selected={selected} onSelect={setSelected} durationMinutes={durationMinutes} />
+        {query.isFetching ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center rounded-2xl border border-dashed border-border bg-muted/50">
+            <Loader2 className="h-8 w-8 animate-spin text-brand mb-3" />
+            <p className="text-sm text-muted-foreground font-medium">Fetching available slots...</p>
+            <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-widest">Checking calendar sync</p>
+          </div>
+        ) : (
+          <SlotTimeline busy={query.data?.busy ?? []} free={filteredFree} selected={selected} onSelect={setSelected} durationMinutes={durationMinutes} />
+        )}
         {selected ? (
           <div className="rounded-[12px] border-l-4 border-brand bg-brand/10 p-4">
             <p className="text-sm font-semibold">{format(new Date(selected.start), 'EEEE, MMM d')}</p>

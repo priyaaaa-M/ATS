@@ -18,4 +18,8 @@ export const rolesApi = {
       .then((r) => r.data),
   syncFromDrive: () =>
     api.post('/api/roles/sync-from-drive').then((r) => r.data),
+  create: (title: string) =>
+    api.post<Role>('/api/roles', { title }).then((r) => r.data),
+  updateStatus: (roleName: string, status: string) =>
+    api.patch(`/api/roles/${roleName}/status`, { status }).then((r) => r.data),
 }

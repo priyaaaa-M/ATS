@@ -32,7 +32,7 @@ export function SlotCalendar({
         <p className="text-sm font-semibold">{format(month, 'MMMM yyyy')}</p>
         <button onClick={() => setMonth(addDays(endOfMonth(month), 1))}><ChevronRight className="h-4 w-4" /></button>
       </div>
-      <div className="grid grid-cols-7 gap-2 text-center text-xs text-[var(--text-2)]">
+      <div className="grid grid-cols-7 gap-2 text-center text-xs text-muted-foreground">
         {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => <span key={day}>{day}</span>)}
         {days.map((date) => {
           const minimum = minDate ?? new Date()
@@ -44,10 +44,10 @@ export function SlotCalendar({
               onClick={() => onChange(date)}
               className={cn(
                 'flex h-9 items-center justify-center rounded-full text-sm',
-                isSameDay(value ?? new Date(0), date) && 'bg-[var(--brand)] text-white',
-                !isSameDay(value ?? new Date(0), date) && isToday(date) && 'font-semibold text-[var(--brand)]',
-                !isSameMonth(date, month) && 'text-[var(--text-3)]',
-                disabled && 'cursor-not-allowed text-[var(--text-3)]',
+                isSameDay(value ?? new Date(0), date) && 'bg-brand text-white',
+                !isSameDay(value ?? new Date(0), date) && isToday(date) && 'font-semibold text-brand',
+                !isSameMonth(date, month) && 'text-muted-foreground/40',
+                disabled && 'cursor-not-allowed text-muted-foreground/40',
               )}
             >
               {format(date, 'd')}
